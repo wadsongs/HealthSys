@@ -1,3 +1,7 @@
 spring:
   application:
     name: pacientes
+  datasource:
+    url: jdbc:postgresql://localhost:5432/healthsyspacientes
+    username: postgres
+    password: 524510he52
