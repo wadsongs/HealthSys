@@ -13,7 +13,7 @@ public class PacienteService {
     @Autowired
     private PacienteRepository repository;
 
-    //Criar ou atulizar um paciente
+    //Criar ou atualizar um paciente
     public PacienteModel salvar(PacienteModel paciente) {
         return repository.save(paciente);
     }
