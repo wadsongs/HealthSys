@@ -2,49 +2,70 @@ package com.br.unifor.pacientes.controller;
 
 import com.br.unifor.pacientes.model.PacienteModel;
 import com.br.unifor.pacientes.service.PacienteService;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
-
-@Controller
+@RestController
 @RequestMapping("/pacientes")
+@RequiredArgsConstructor
+@Tag(name = "Pacientes", description = "Gerenciamento de Pacientes")
+@SecurityRequirement(name = "Bearer Auth")
+
 public class PacienteController {
 
-    @Autowired
-    private PacienteService service;
+    private final PacienteService service;
 
-    //Endpoint para criar um novo paciente
+    // Cadastrar paciente
+    @Operation(summary = "Cadastrar paciente")
     @PostMapping
-    public ResponseEntity<PacienteModel> criar(@RequestBody PacienteModel paciente) {
-        PacienteModel pacienteSalvo = service.salvar(paciente);
-        return ResponseEntity.status(HttpStatus.CREATED).body(pacienteSalvo);
+    public ResponseEntity<PacienteModel> criar(@RequestBody @Valid PacienteModel paciente) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.criar(paciente));
     }
 
-    //Endpoint para listar todos
+    // Listar todos com paginação
+    @Operation(summary = "Listar pacientes")
     @GetMapping
-    public ResponseEntity<List<PacienteModel>> listarTodos() {
-        List<PacienteModel> pacientes = service.listarTodos();
-        return ResponseEntity.ok(pacientes);
+    public ResponseEntity<Page<PacienteModel>> listarTodos(Pageable pageable) {
+        return ResponseEntity.status(HttpStatus.OK).body(service.listarTodos(pageable));
     }
 
-    //Endpoint busca por ID
+    // Buscar por ID
+    @Operation(summary = "Buscar paciente por ID")
     @GetMapping("/{id}")
     public ResponseEntity<PacienteModel> buscarPorId(@PathVariable Long id) {
-        Optional<PacienteModel> paciente = service.buscarPorId(id);
-
-        return paciente.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        return ResponseEntity.ok(service.buscarPorId(id));
     }
 
-    //Endpoint delete por ID
+    // Buscar por CPF
+    @Operation(summary = "Buscar paciente por CPF")
+    @GetMapping("/cpf/{cpf}")
+    public ResponseEntity<PacienteModel> buscarPorCpf(@PathVariable String cpf) {
+        return ResponseEntity.ok(service.buscarPorCpf(cpf));
+    }
+
+    // Atualizar — RF01
+    @Operation(summary = "Atualizar paciente")
+    @PutMapping("/{id}")
+    public ResponseEntity<PacienteModel> atualizar(
+            @PathVariable Long id,
+            @RequestBody @Valid PacienteModel paciente) {
+        return ResponseEntity.ok(service.atualizar(id, paciente));
+    }
+
+    // Deletar
+    @Operation(summary = "Deletar paciente")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         service.deletar(id);
-        return ResponseEntity.noContent().build(); //Retorna 204
+        return ResponseEntity.noContent().build();
     }
 }

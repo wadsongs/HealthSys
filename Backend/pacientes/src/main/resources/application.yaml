@@ -3,5 +3,14 @@ spring:
     name: pacientes
   datasource:
     url: jdbc:postgresql://localhost:5432/healthsyspacientes
-    username: postgres
-    password: 524510he52
+    username: wadson
+    password: postgres
+
+server:
+  port: 8082
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs

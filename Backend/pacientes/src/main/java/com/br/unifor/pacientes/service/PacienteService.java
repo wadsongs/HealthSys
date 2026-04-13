@@ -1,35 +1,73 @@
 package com.br.unifor.pacientes.service;
+
+import com.br.unifor.pacientes.exception.PacienteNotFoundException;
 import com.br.unifor.pacientes.model.PacienteModel;
 import com.br.unifor.pacientes.repository.PacienteRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class PacienteService {
 
-    @Autowired
-    private PacienteRepository repository;
+    private final PacienteRepository repository;
 
-    //Criar ou atulizar um paciente
-    public PacienteModel salvar(PacienteModel paciente) {
+    // Criar paciente
+    public PacienteModel criar(PacienteModel paciente) {
+        if (repository.existsByCpf(paciente.getCpf())) {
+            throw new RuntimeException("CPF já cadastrado: " + paciente.getCpf());
+        }
         return repository.save(paciente);
     }
 
-    //Listar todos os pacientes
-    public List<PacienteModel> listarTodos() {
-        return repository.findAll();
+    // Atualizar paciente
+    public PacienteModel atualizar(Long id, PacienteModel dados) {
+        PacienteModel existente = buscarPorIdOuFalhar(id);
+
+        if (!existente.getCpf().equals(dados.getCpf())
+                && repository.existsByCpf(dados.getCpf())) {
+            throw new RuntimeException("CPF já cadastrado: " + dados.getCpf());
+        }
+
+        existente.setNome(dados.getNome());
+        existente.setDataNascimento(dados.getDataNascimento());
+        existente.setCpf(dados.getCpf());
+        existente.setEmail(dados.getEmail());
+        existente.setSexo(dados.getSexo());
+        existente.setTelefone(dados.getTelefone());
+        existente.setAlergias(dados.getAlergias());
+
+        return repository.save(existente);
     }
 
-    //Buscar paciente por ID
-    public Optional<PacienteModel> buscarPorId(Long id) {
-        return repository.findById(id);
+    // Listar com paginação
+    public Page<PacienteModel> listarTodos(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 
-    //Deletar por ID
+    // Buscar por ID
+    public PacienteModel buscarPorId(Long id) {
+        return buscarPorIdOuFalhar(id);
+    }
+
+    // Buscar por CPF
+    public PacienteModel buscarPorCpf(String cpf) {
+        return repository.findByCpf(cpf)
+                .orElseThrow(() -> new PacienteNotFoundException(cpf));
+    }
+
+    // Deletar
     public void deletar(Long id) {
+        buscarPorIdOuFalhar(id);
         repository.deleteById(id);
+    }
+
+    private PacienteModel buscarPorIdOuFalhar(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new PacienteNotFoundException(id));
     }
 }
