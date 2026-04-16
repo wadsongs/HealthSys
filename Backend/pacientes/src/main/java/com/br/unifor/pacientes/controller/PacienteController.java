@@ -5,43 +5,44 @@ import com.br.unifor.pacientes.service.PacienteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
-
-@Controller
-@Tag(name = "Pacientes", description = "Endpoints para gerenciamento de pacientes")
+@RestController
 @RequestMapping("/pacientes")
+@RequiredArgsConstructor
+@Tag(name = "Pacientes", description = "Gerenciamento de Pacientes")
+@SecurityRequirement(name = "Bearer Auth")
+
 public class PacienteController {
 
-    @Autowired
-    private PacienteService service;
+    private final PacienteService service;
 
-    //Endpoint para criar um novo paciente
-    @PostMapping
-    @Operation(summary = "Cadastrar um novo paciente", description = "Salva um novo paciente no banco de dados.")
+    // Cadastrar paciente
+    @Operation(summary = "Cadastrar paciente", description = "Salva um novo paciente no banco de dados.")
     @ApiResponse(responseCode = "201", description = "Paciente criado com sucesso")
-    public ResponseEntity<PacienteModel> criar(@Valid @RequestBody PacienteModel paciente) {
-        PacienteModel pacienteSalvo = service.salvar(paciente);
-        return ResponseEntity.status(HttpStatus.CREATED).body(pacienteSalvo);
+    @PostMapping
+    public ResponseEntity<PacienteModel> criar(@RequestBody @Valid PacienteModel paciente) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.criar(paciente));
     }
 
-    //Endpoint para listar todos
+    // Listar todos com paginação
+    @Operation(summary = "Listar pacientes")
     @GetMapping
-    @Operation(summary = "Listar todos os pacientes")
-    public ResponseEntity<List<PacienteModel>> listarTodos() {
-        List<PacienteModel> pacientes = service.listarTodos();
-        return ResponseEntity.ok(pacientes);
+    public ResponseEntity<Page<PacienteModel>> listarTodos(Pageable pageable) {
+        return ResponseEntity.status(HttpStatus.OK).body(service.listarTodos(pageable));
     }
 
-    //Endpoint busca por ID
+    // Buscar por ID
+    @Operation(summary = "Buscar paciente por ID")
     @GetMapping("/{id}")
     @Operation(summary = "Buscar paciente por ID")
     @ApiResponses(value = {
@@ -49,18 +50,32 @@ public class PacienteController {
             @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
     })
     public ResponseEntity<PacienteModel> buscarPorId(@PathVariable Long id) {
-        Optional<PacienteModel> paciente = service.buscarPorId(id);
-
-        return paciente.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        return ResponseEntity.ok(service.buscarPorId(id));
     }
 
-    //Endpoint delete por ID
+    // Buscar por CPF
+    @Operation(summary = "Buscar paciente por CPF")
+    @GetMapping("/cpf/{cpf}")
+    public ResponseEntity<PacienteModel> buscarPorCpf(@PathVariable String cpf) {
+        return ResponseEntity.ok(service.buscarPorCpf(cpf));
+    }
+
+    // Atualizar — RF01
+    @Operation(summary = "Atualizar paciente")
+    @PutMapping("/{id}")
+    public ResponseEntity<PacienteModel> atualizar(
+            @PathVariable Long id,
+            @RequestBody @Valid PacienteModel paciente) {
+        return ResponseEntity.ok(service.atualizar(id, paciente));
+    }
+
+    // Deletar
+    @Operation(summary = "Deletar paciente")
     @DeleteMapping("/{id}")
     @Operation(summary = "Deletar um paciente", description = "Remove o paciente pelo seu ID.")
     @ApiResponse(responseCode = "204", description = "Paciente deletado com sucesso")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         service.deletar(id);
-        return ResponseEntity.noContent().build(); //Retorna 204
+        return ResponseEntity.noContent().build();
     }
 }
