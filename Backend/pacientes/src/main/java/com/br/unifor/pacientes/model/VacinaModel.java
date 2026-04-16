@@ -57,3 +57,4 @@ public class VacinaModel {
     @JsonBackReference
     private PacienteModel paciente;
 }
+

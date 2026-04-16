@@ -3,10 +3,12 @@ package com.br.unifor.pacientes.controller;
 import com.br.unifor.pacientes.model.PacienteModel;
 import com.br.unifor.pacientes.service.PacienteService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
@@ -25,7 +27,8 @@ public class PacienteController {
     private final PacienteService service;
 
     // Cadastrar paciente
-    @Operation(summary = "Cadastrar paciente")
+    @Operation(summary = "Cadastrar paciente", description = "Salva um novo paciente no banco de dados.")
+    @ApiResponse(responseCode = "201", description = "Paciente criado com sucesso")
     @PostMapping
     public ResponseEntity<PacienteModel> criar(@RequestBody @Valid PacienteModel paciente) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.criar(paciente));
@@ -41,6 +44,11 @@ public class PacienteController {
     // Buscar por ID
     @Operation(summary = "Buscar paciente por ID")
     @GetMapping("/{id}")
+    @Operation(summary = "Buscar paciente por ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Paciente encontrado"),
+            @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
+    })
     public ResponseEntity<PacienteModel> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(service.buscarPorId(id));
     }
@@ -64,6 +72,8 @@ public class PacienteController {
     // Deletar
     @Operation(summary = "Deletar paciente")
     @DeleteMapping("/{id}")
+    @Operation(summary = "Deletar um paciente", description = "Remove o paciente pelo seu ID.")
+    @ApiResponse(responseCode = "204", description = "Paciente deletado com sucesso")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         service.deletar(id);
         return ResponseEntity.noContent().build();
