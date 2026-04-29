@@ -1,4 +1,4 @@
-CREATE TABLE vacina (
+CREATE TABLE IF NOT EXISTS vacina (
     id SERIAL PRIMARY KEY,
     nome_vacina VARCHAR(100) NOT NULL,
     data_aplicacao DATE NOT NULL,
