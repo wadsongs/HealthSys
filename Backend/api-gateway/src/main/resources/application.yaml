@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        # Serviço de Usuários — rotas públicas (sem JWT)
+        - id: usuarios-auth
+          uri: http://localhost:8081
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=0
+
+        # Serviço de Usuários — rotas protegidas
+        - id: usuarios-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/usuarios/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuthGatewayFilter
+
+        # Serviço de Prontuário — rotas protegidas
+        - id: prontuario-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/prontuarios/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuthGatewayFilter
+
+        # Serviço de Pacientes
+        - id: paciente-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/pacientes/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuthGatewayFilter
+
+server:
+  port: 8080
+
+jwt:
+  secret: healthsys-secret-key-unifor-2024-distributed-systems
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info
