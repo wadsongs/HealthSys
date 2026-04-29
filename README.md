@@ -1,36 +1,81 @@
-## Como iniciar o Frontend
+# HealthSys
 
-### 1) Pre-requisitos
-- Node.js 20+ instalado
-- npm instalado (normalmente vem com o Node)
+Sistema de gestão hospitalar com arquitetura de microsserviços.
 
-### 2) Entrar na pasta do frontend
-No terminal, na raiz do projeto:
+## Visão geral
 
-```powershell
-cd "HealthSys\Frontend"
+| Componente | Tecnologia | Porta |
+|------------|-----------|-------|
+| Frontend | Next.js 16 + React 19 + TypeScript | 3000 |
+| API Gateway | Spring Boot 3.2 + Spring Cloud Gateway | 8080 |
+| Serviço de Usuários | Spring Boot 4.0 + PostgreSQL + JWT | 8081 |
+| Serviço de Pacientes | Spring Boot 3.4 + PostgreSQL + Flyway | 8082 |
+| Serviço de Prontuário | Spring Boot 4.0 + MongoDB | 8083 |
+
+## Rodando com Docker (recomendado)
+
+### Pré-requisitos
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+
+### Subir todos os serviços
+
+```bash
+cd Backend
+docker-compose up --build
 ```
 
-### 3) Instalar dependencias
+Na primeira execução os bancos de dados são criados automaticamente via Flyway.
 
-```powershell
+Para parar e remover tudo (incluindo volumes):
+```bash
+docker-compose down -v
+```
+
+### Serviços disponíveis após o boot
+
+| Serviço | URL |
+|---------|-----|
+| API Gateway | http://localhost:8080 |
+| Usuários (direto) | http://localhost:8081 |
+| Pacientes (direto) | http://localhost:8082 |
+| Prontuário (direto) | http://localhost:8083 |
+| Swagger — Usuários | http://localhost:8081/swagger-ui.html |
+| Swagger — Pacientes | http://localhost:8082/swagger-ui.html |
+| Swagger — Prontuário | http://localhost:8083/swagger-ui.html |
+
+## Rodando o Frontend
+
+Consulte [`Frontend/README.md`](Frontend/README.md) para instruções detalhadas.
+
+Resumo rápido:
+```bash
+cd Frontend
 npm install
-```
-
-### 4) Iniciar o frontend em modo desenvolvimento
-
-```powershell
 npm run dev
 ```
 
-### 5) Acessar no navegador
-- URL: [http://localhost:3000](http://localhost:3000)
-- Login: [http://localhost:3000/login](http://localhost:3000/login)
+Acesse: http://localhost:3000
 
-### 6) Observacao sobre backend
-Para o Front, foi planejado consumir os servicos de backend nesses enderecos:
-- `usuarios` em `http://localhost:8081`
-- `pacientes` em `http://localhost:8082`
-- `prontuario` em `http://localhost:8083`
+## Estrutura do repositório
 
-Se os backends nao estiverem ativos, o frontend abre normalmente, mas as operacoes de autenticacao e integracao podem falhar.
+```
+HealthSys/
+├── Backend/
+│   ├── api-gateway/       # Spring Cloud Gateway + filtro JWT
+│   ├── usuarios/          # CRUD de usuários, autenticação JWT
+│   ├── pacientes/         # CRUD de pacientes, vacinas, alergias
+│   ├── prontuario/        # Prontuários eletrônicos (MongoDB)
+│   └── docker-compose.yml # Orquestração local completa
+└── Frontend/              # Interface web Next.js
+```
+
+## Banco de dados
+
+| Banco | Tipo | Porta local |
+|-------|------|------------|
+| healthsys_usuarios | PostgreSQL 13 | 5433 |
+| healthsyspacientes | PostgreSQL 13 | 5434 |
+| healthsys_prontuario | MongoDB 4.4 | 27017 |
+
+Os dados são persistidos em volumes Docker nomeados (`postgres_users_data`, `postgres_patients_data`, `mongo_records_data`).

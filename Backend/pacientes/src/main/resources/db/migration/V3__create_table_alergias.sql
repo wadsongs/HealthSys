@@ -1,4 +1,4 @@
-CREATE TABLE paciente_alergia (
+CREATE TABLE IF NOT EXISTS paciente_alergia (
     paciente_id BIGINT NOT NULL,
     alergia VARCHAR(100) NOT NULL,
 

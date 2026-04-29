@@ -1,0 +1,78 @@
+# ==========================================
+# IDEs
+# ==========================================
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.code-workspace
+
+# ==========================================
+# Maven
+# ==========================================
+target/
+*.jar
+*.war
+*.ear
+!**/src/main/**/target/
+!**/src/test/**/target/
+.mvn/wrapper/maven-wrapper.jar
+HELP.md
+
+# ==========================================
+# Gradle
+# ==========================================
+.gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ==========================================
+# Spring / Java
+# ==========================================
+*.class
+*.log
+*.tmp
+*.pid
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# ==========================================
+# Node.js / Next.js
+# ==========================================
+node_modules/
+.next/
+out/
+.vercel/
+.snowflake/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==========================================
+# Env / Secrets
+# ==========================================
+.env
+.env.*
+!.env.example
+*.local
+
+# ==========================================
+# OS
+# ==========================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==========================================
+# Misc
+# ==========================================
+*.db
+*.sqlite
