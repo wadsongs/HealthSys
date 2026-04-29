@@ -1,6 +1,12 @@
 spring:
   application:
     name: pacientes
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+  cache:
+    type: redis
   datasource:
     url: jdbc:postgresql://postgres_patients:5432/healthsyspacientes
     username: wadson
