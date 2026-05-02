@@ -2,9 +2,19 @@ spring:
   application:
     name: pacientes
   datasource:
-    url: jdbc:postgresql://localhost:5432/healthsyspacientes
+    url: jdbc:postgresql://localhost:5432/healthsys_pacientes
     username: wadson
     password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    baseline-on-migrate: true
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 
 server:
   port: 8082

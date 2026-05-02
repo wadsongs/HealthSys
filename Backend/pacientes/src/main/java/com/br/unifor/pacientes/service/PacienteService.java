@@ -15,13 +15,24 @@ import java.util.List;
 public class PacienteService {
 
     private final PacienteRepository repository;
+    private final com.br.unifor.pacientes.mq.PacienteEventProducer eventProducer;
 
     // Criar paciente
     public PacienteModel criar(PacienteModel paciente) {
         if (repository.existsByCpf(paciente.getCpf())) {
             throw new RuntimeException("CPF já cadastrado: " + paciente.getCpf());
         }
-        return repository.save(paciente);
+        PacienteModel salvo = repository.save(paciente);
+        
+        // Enviar evento de criação
+        eventProducer.sendPacienteCriadoEvent(com.br.unifor.pacientes.dto.ProntuarioEvent.builder()
+                .idPaciente(salvo.getId())
+                .tipoEvento("PACIENTE_CRIADO")
+                .descricao("Novo paciente cadastrado: " + salvo.getNome())
+                .dataEvento(java.time.LocalDateTime.now())
+                .build());
+                
+        return salvo;
     }
 
     // Atualizar paciente

@@ -1,0 +1,199 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      usuarios:
+        condition: service_healthy
+      pacientes:
+        condition: service_healthy
+      prontuario:
+        condition: service_healthy
+      triagem:
+        condition: service_healthy
+    environment:
+      JWT_SECRET: healthsys-secret-key-unifor-2024-distributed-systems
+      USERS_SERVICE_URL: http://usuarios:8081
+      PATIENTS_SERVICE_URL: http://pacientes:8082
+      RECORDS_SERVICE_URL: http://prontuario:8083
+      TRIAGE_SERVICE_URL: http://triagem:8084
+
+  usuarios:
+    build: ./usuarios
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres_users:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8081
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_users:5432/healthsys_usuarios
+      SPRING_DATASOURCE_USERNAME: wadson
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_RABBITMQ_HOST: rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  pacientes:
+    build: ./pacientes
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres_patients:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8082
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_patients:5432/healthsyspacientes
+      SPRING_DATASOURCE_USERNAME: wadson
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_RABBITMQ_HOST: rabbitmq
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8082/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  prontuario:
+    build: ./prontuario
+    ports:
+      - "8083:8083"
+    depends_on:
+      mongo_records:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8083
+      SPRING_MONGODB_URI: mongodb://mongo_records:27017/healthsys_prontuario
+      SPRING_RABBITMQ_HOST: rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8083/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  triagem:
+    build: ./triagem
+    ports:
+      - "8084:8084"
+    depends_on:
+      postgres_triagem:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8084
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_triagem:5432/healthsys_triagem
+      SPRING_DATASOURCE_USERNAME: wadson
+      SPRING_DATASOURCE_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8084/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres_triagem:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_DB: healthsys_triagem
+      POSTGRES_USER: wadson
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_triagem_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wadson -d healthsys_triagem"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres_users:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_DB: healthsys_usuarios
+      POSTGRES_USER: wadson
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_users_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wadson -d healthsys_usuarios"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres_patients:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_DB: healthsyspacientes
+      POSTGRES_USER: wadson
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_patients_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wadson -d healthsyspacientes"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mongo_records:
+    image: mongo:4.4
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_records_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongo --eval 'db.runCommand({ ping: 1 })' --quiet"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_users_data:
+  postgres_patients_data:
+  postgres_triagem_data:
+  mongo_records_data:
+  redis_data:

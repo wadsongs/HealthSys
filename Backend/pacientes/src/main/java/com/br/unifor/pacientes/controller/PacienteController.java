@@ -44,7 +44,6 @@ public class PacienteController {
     // Buscar por ID
     @Operation(summary = "Buscar paciente por ID")
     @GetMapping("/{id}")
-    @Operation(summary = "Buscar paciente por ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Paciente encontrado"),
             @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
@@ -70,9 +69,8 @@ public class PacienteController {
     }
 
     // Deletar
-    @Operation(summary = "Deletar paciente")
+    @Operation(summary = "Deletar paciente", description = "Remove o paciente pelo seu ID.")
     @DeleteMapping("/{id}")
-    @Operation(summary = "Deletar um paciente", description = "Remove o paciente pelo seu ID.")
     @ApiResponse(responseCode = "204", description = "Paciente deletado com sucesso")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         service.deletar(id);
