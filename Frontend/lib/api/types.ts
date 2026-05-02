@@ -36,6 +36,14 @@ export interface Vacina {
   lote: string
 }
 
+export interface SpringPage<T> {
+  content: T[]
+  totalElements: number
+  totalPages: number
+  size: number
+  number: number
+}
+
 export interface PacienteRequest {
   nome: string
   dataNascimento: string
@@ -48,4 +56,7 @@ export interface PacienteRequest {
 
 export interface PacienteResponse extends PacienteRequest {
   id: number
+  dataCadastro: string
+  dataAtualizacao: string
 }
+

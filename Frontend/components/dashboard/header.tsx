@@ -15,15 +15,35 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { getStoredUser } from "@/lib/auth-storage"
+import { listarPacientesRecentes } from "@/lib/api/pacientes"
+import type { PacienteResponse } from "@/lib/api/types"
+
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return "—"
+  const diff = Date.now() - date.getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return "agora mesmo"
+  if (mins < 60) return `há ${mins} minuto${mins !== 1 ? "s" : ""}`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `há ${hours} hora${hours !== 1 ? "s" : ""}`
+  const days = Math.floor(hours / 24)
+  return `há ${days} dia${days !== 1 ? "s" : ""}`
+}
 
 export function DashboardHeader() {
   const [userName, setUserName] = useState("Usuário")
   const [userProfile, setUserProfile] = useState("Colaborador")
+  const [notificacoes, setNotificacoes] = useState<PacienteResponse[]>([])
 
   useEffect(() => {
     const { nome, perfil } = getStoredUser()
     if (nome) setUserName(nome)
     if (perfil) setUserProfile(perfil)
+
+    listarPacientesRecentes(3)
+      .then(({ pacientes }) => setNotificacoes(pacientes))
+      .catch(() => null)
   }, [])
 
   return (
@@ -53,30 +73,38 @@ export function DashboardHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
-                3
-              </Badge>
+              {notificacoes.length > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                  {notificacoes.length}
+                </Badge>
+              )}
               <span className="sr-only">Notificações</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel>Notificações</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="flex flex-col items-start gap-1 cursor-pointer">
-              <span className="font-medium">Nova triagem pendente</span>
-              <span className="text-xs text-muted-foreground">Paciente aguardando avaliação - há 5 min</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="flex flex-col items-start gap-1 cursor-pointer">
-              <span className="font-medium">Consulta confirmada</span>
-              <span className="text-xs text-muted-foreground">Dr. Silva confirmou consulta - há 15 min</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="flex flex-col items-start gap-1 cursor-pointer">
-              <span className="font-medium">Alta médica registrada</span>
-              <span className="text-xs text-muted-foreground">Paciente Maria Santos - há 1 hora</span>
-            </DropdownMenuItem>
+            {notificacoes.length === 0 ? (
+              <DropdownMenuItem disabled>
+                <span className="text-muted-foreground text-sm">Nenhuma notificação</span>
+              </DropdownMenuItem>
+            ) : (
+              notificacoes.map((paciente) => (
+                <DropdownMenuItem
+                  key={paciente.id}
+                  className="flex flex-col items-start gap-1 cursor-pointer"
+                >
+                  <span className="font-medium">Novo paciente registrado</span>
+                  <span className="text-xs text-muted-foreground">
+                    {paciente.nome} —{" "}
+                    {paciente.dataCadastro ? formatRelativeTime(paciente.dataCadastro) : "—"}
+                  </span>
+                </DropdownMenuItem>
+              ))
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-center text-primary cursor-pointer">
-              Ver todas as notificações
+            <DropdownMenuItem className="text-center text-primary cursor-pointer justify-center">
+              Ver todos os pacientes
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
