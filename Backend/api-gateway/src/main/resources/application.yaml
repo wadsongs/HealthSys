@@ -39,6 +39,15 @@ spring:
             - StripPrefix=0
             - name: JwtAuthGatewayFilter
 
+        # Serviço de Triagem
+        - id: triagem-service
+          uri: http://localhost:8084
+          predicates:
+            - Path=/triagens/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuthGatewayFilter
+
 server:
   port: 8080
 
