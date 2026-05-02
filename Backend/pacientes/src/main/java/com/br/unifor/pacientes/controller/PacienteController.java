@@ -43,11 +43,11 @@ public class PacienteController {
 
     // Buscar por ID
     @Operation(summary = "Buscar paciente por ID")
-    @GetMapping("/{id}")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Paciente encontrado"),
             @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
     })
+    @GetMapping("/{id}")
     public ResponseEntity<PacienteModel> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(service.buscarPorId(id));
     }
@@ -56,7 +56,7 @@ public class PacienteController {
     @Operation(summary = "Buscar paciente por CPF")
     @GetMapping("/cpf/{cpf}")
     public ResponseEntity<PacienteModel> buscarPorCpf(@PathVariable String cpf) {
-        return ResponseEntity.ok(service.buscarPorCpf(cpf));
+        return ResponseEntity.ok(service.buscarCpf(cpf));
     }
 
     // Atualizar — RF01
@@ -70,8 +70,8 @@ public class PacienteController {
 
     // Deletar
     @Operation(summary = "Deletar paciente", description = "Remove o paciente pelo seu ID.")
-    @DeleteMapping("/{id}")
     @ApiResponse(responseCode = "204", description = "Paciente deletado com sucesso")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         service.deletar(id);
         return ResponseEntity.noContent().build();

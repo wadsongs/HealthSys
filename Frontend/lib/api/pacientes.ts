@@ -1,8 +1,24 @@
 import { apiRequest } from "@/lib/api/client"
-import type { PacienteRequest, PacienteResponse } from "@/lib/api/types"
+import type { PacienteRequest, PacienteResponse, SpringPage } from "@/lib/api/types"
 
 export async function listarPacientes() {
-  return apiRequest<PacienteResponse[]>("pacientes", "/pacientes")
+  const page = await apiRequest<SpringPage<PacienteResponse>>("pacientes", "/pacientes")
+  return page.content
+}
+
+export async function buscarPaginaPacientes(params?: string) {
+  return apiRequest<SpringPage<PacienteResponse>>(
+    "pacientes",
+    `/pacientes${params ? `?${params}` : ""}`
+  )
+}
+
+export async function listarPacientesRecentes(quantidade = 5) {
+  const page = await apiRequest<SpringPage<PacienteResponse>>(
+    "pacientes",
+    `/pacientes?sort=dataCadastro,desc&size=${quantidade}`
+  )
+  return { pacientes: page.content, total: page.totalElements }
 }
 
 export async function cadastrarPaciente(payload: PacienteRequest) {
