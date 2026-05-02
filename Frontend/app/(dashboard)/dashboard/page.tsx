@@ -1,113 +1,52 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import Link from "next/link"
 import {
   Users,
   ClipboardList,
   Stethoscope,
   BedDouble,
   TrendingUp,
-  Clock,
-  AlertCircle,
-  CheckCircle2,
   UserPlus,
   Calendar,
+  Loader2,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { listarPacientesRecentes } from "@/lib/api/pacientes"
+import type { PacienteResponse } from "@/lib/api/types"
 
-const statsCards = [
-  {
-    title: "Total de Pacientes",
-    value: "1.248",
-    change: "+12%",
-    changeType: "positive" as const,
-    icon: Users,
-    description: "vs. mês anterior",
-  },
-  {
-    title: "Triagens Pendentes",
-    value: "8",
-    change: "-3",
-    changeType: "negative" as const,
-    icon: ClipboardList,
-    description: "aguardando avaliação",
-  },
-  {
-    title: "Consultas Hoje",
-    value: "24",
-    change: "4 restantes",
-    changeType: "neutral" as const,
-    icon: Stethoscope,
-    description: "20 realizadas",
-  },
-  {
-    title: "Leitos Ocupados",
-    value: "45/60",
-    change: "75%",
-    changeType: "neutral" as const,
-    icon: BedDouble,
-    description: "15 disponíveis",
-  },
-]
-
-const recentActivities = [
-  {
-    id: 1,
-    type: "check-in",
-    title: "Novo paciente registrado",
-    description: "Maria Santos - Triagem",
-    time: "há 5 minutos",
-    status: "pending",
-    icon: UserPlus,
-  },
-  {
-    id: 2,
-    type: "consultation",
-    title: "Consulta finalizada",
-    description: "João Pereira - Dr. Silva",
-    time: "há 15 minutos",
-    status: "completed",
-    icon: CheckCircle2,
-  },
-  {
-    id: 3,
-    type: "alert",
-    title: "Triagem urgente",
-    description: "Ana Costa - Emergência",
-    time: "há 20 minutos",
-    status: "urgent",
-    icon: AlertCircle,
-  },
-  {
-    id: 4,
-    type: "schedule",
-    title: "Consulta agendada",
-    description: "Pedro Lima - Cardiologia",
-    time: "há 30 minutos",
-    status: "scheduled",
-    icon: Calendar,
-  },
-  {
-    id: 5,
-    type: "consultation",
-    title: "Consulta finalizada",
-    description: "Lucia Ferreira - Dra. Santos",
-    time: "há 1 hora",
-    status: "completed",
-    icon: CheckCircle2,
-  },
-]
-
-const upcomingAppointments = [
-  { patient: "Carlos Mendes", doctor: "Dr. Silva", time: "14:00", specialty: "Cardiologia" },
-  { patient: "Ana Rodrigues", doctor: "Dra. Lima", time: "14:30", specialty: "Pediatria" },
-  { patient: "Roberto Alves", doctor: "Dr. Costa", time: "15:00", specialty: "Ortopedia" },
-  { patient: "Fernanda Santos", doctor: "Dra. Oliveira", time: "15:30", specialty: "Dermatologia" },
-]
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return "—"
+  const diff = Date.now() - date.getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return "agora mesmo"
+  if (mins < 60) return `há ${mins} minuto${mins !== 1 ? "s" : ""}`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `há ${hours} hora${hours !== 1 ? "s" : ""}`
+  const days = Math.floor(hours / 24)
+  return `há ${days} dia${days !== 1 ? "s" : ""}`
+}
 
 export default function DashboardPage() {
+  const [totalPacientes, setTotalPacientes] = useState<number | null>(null)
+  const [recentes, setRecentes] = useState<PacienteResponse[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    listarPacientesRecentes(5)
+      .then(({ pacientes, total }) => {
+        setRecentes(pacientes)
+        setTotalPacientes(total)
+      })
+      .catch(() => null)
+      .finally(() => setLoading(false))
+  }, [])
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -118,128 +57,156 @@ export default function DashboardPage() {
             Bem-vindo de volta! Aqui está o resumo do dia.
           </p>
         </div>
-        <Button className="gap-2">
-          <UserPlus className="h-4 w-4" />
-          Novo Paciente
-        </Button>
+        <Link href="/dashboard/pacientes/novo">
+          <Button className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            Novo Paciente
+          </Button>
+        </Link>
       </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {statsCards.map((stat) => (
-          <Card key={stat.title} className="border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                <stat.icon className="h-5 w-5 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+        {/* Total de Pacientes — dado real */}
+        <Card className="border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total de Pacientes
+            </CardTitle>
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+              <Users className="h-5 w-5 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {loading ? (
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              ) : (
+                totalPacientes?.toLocaleString("pt-BR") ?? "—"
+              )}
+            </div>
+            {!loading && totalPacientes !== null && (
               <div className="flex items-center gap-2 mt-1">
-                {stat.changeType === "positive" && (
-                  <Badge variant="secondary" className="bg-success/10 text-success border-0 gap-1">
-                    <TrendingUp className="h-3 w-3" />
-                    {stat.change}
-                  </Badge>
-                )}
-                {stat.changeType === "negative" && (
-                  <Badge variant="secondary" className="bg-destructive/10 text-destructive border-0 gap-1">
-                    <Clock className="h-3 w-3" />
-                    {stat.change}
-                  </Badge>
-                )}
-                {stat.changeType === "neutral" && (
-                  <Badge variant="secondary" className="bg-muted border-0">
-                    {stat.change}
-                  </Badge>
-                )}
-                <span className="text-xs text-muted-foreground">{stat.description}</span>
+                <Badge variant="secondary" className="bg-success/10 text-success border-0 gap-1">
+                  <TrendingUp className="h-3 w-3" />
+                  cadastrados
+                </Badge>
+                <span className="text-xs text-muted-foreground">no sistema</span>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Triagens Pendentes — módulo não disponível */}
+        <Card className="border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Triagens Pendentes
+            </CardTitle>
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+              <ClipboardList className="h-5 w-5 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">—</div>
+            <span className="text-xs text-muted-foreground">módulo não disponível</span>
+          </CardContent>
+        </Card>
+
+        {/* Consultas Hoje — módulo não disponível */}
+        <Card className="border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Consultas Hoje
+            </CardTitle>
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+              <Stethoscope className="h-5 w-5 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">—</div>
+            <span className="text-xs text-muted-foreground">módulo não disponível</span>
+          </CardContent>
+        </Card>
+
+        {/* Leitos Ocupados — módulo não disponível */}
+        <Card className="border-border/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Leitos Ocupados
+            </CardTitle>
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+              <BedDouble className="h-5 w-5 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">—</div>
+            <span className="text-xs text-muted-foreground">módulo não disponível</span>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Recent Activities */}
+        {/* Atividades Recentes — dados reais */}
         <Card className="lg:col-span-2 border-border/50">
           <CardHeader>
             <CardTitle>Atividades Recentes</CardTitle>
-            <CardDescription>
-              Últimas atualizações do sistema
-            </CardDescription>
+            <CardDescription>Últimos pacientes cadastrados no sistema</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
-                >
+            {loading ? (
+              <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Carregando atividades...
+              </div>
+            ) : recentes.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-8 text-center">
+                Nenhuma atividade recente
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {recentes.map((paciente) => (
                   <div
-                    className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 ${
-                      activity.status === "completed"
-                        ? "bg-success/10 text-success"
-                        : activity.status === "urgent"
-                        ? "bg-destructive/10 text-destructive"
-                        : activity.status === "pending"
-                        ? "bg-warning/10 text-warning"
-                        : "bg-primary/10 text-primary"
-                    }`}
+                    key={paciente.id}
+                    className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <activity.icon className="h-5 w-5" />
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0 bg-primary/10 text-primary">
+                      <UserPlus className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm">Novo paciente registrado</p>
+                      <p className="text-sm text-muted-foreground truncate">{paciente.nome}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {paciente.dataCadastro ? formatRelativeTime(paciente.dataCadastro) : "—"}
+                    </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm">{activity.title}</p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {activity.description}
-                    </p>
-                  </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {activity.time}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <Button variant="outline" className="w-full mt-4">
-              Ver todas as atividades
-            </Button>
+                ))}
+              </div>
+            )}
+            <Link href="/dashboard/pacientes">
+              <Button variant="outline" className="w-full mt-4">
+                Ver todos os pacientes
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 
-        {/* Upcoming Appointments */}
+        {/* Próximas Consultas — módulo não disponível */}
         <Card className="border-border/50">
           <CardHeader>
             <CardTitle>Próximas Consultas</CardTitle>
-            <CardDescription>
-              Agenda de hoje
-            </CardDescription>
+            <CardDescription>Agenda de hoje</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {upcomingAppointments.map((appointment, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/30"
-                >
-                  <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary font-semibold text-sm">
-                    {appointment.time}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{appointment.patient}</p>
-                    <p className="text-xs text-muted-foreground">{appointment.doctor}</p>
-                    <Badge variant="outline" className="mt-1 text-xs">
-                      {appointment.specialty}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+            <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
+              <Calendar className="h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">
+                Módulo de agendamento não disponível
+              </p>
             </div>
-            <Button variant="outline" className="w-full mt-4">
+            <Button variant="outline" className="w-full mt-4" disabled>
               Ver agenda completa
             </Button>
           </CardContent>
@@ -250,14 +217,35 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="border-border/50">
           <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total de Pacientes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              {loading ? (
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              ) : (
+                <>
+                  <span className="text-2xl font-bold">
+                    {totalPacientes?.toLocaleString("pt-BR") ?? "—"}
+                  </span>
+                  <span className="text-sm text-muted-foreground">pacientes</span>
+                </>
+              )}
+            </div>
+            <Progress value={100} className="h-2" />
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Taxa de Ocupação - UTI</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl font-bold">85%</span>
-              <span className="text-sm text-muted-foreground">17/20 leitos</span>
+              <span className="text-2xl font-bold">—</span>
+              <span className="text-sm text-muted-foreground">módulo não disponível</span>
             </div>
-            <Progress value={85} className="h-2" />
+            <Progress value={0} className="h-2" />
           </CardContent>
         </Card>
 
@@ -267,23 +255,10 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl font-bold">68%</span>
-              <span className="text-sm text-muted-foreground">28/40 leitos</span>
+              <span className="text-2xl font-bold">—</span>
+              <span className="text-sm text-muted-foreground">módulo não disponível</span>
             </div>
-            <Progress value={68} className="h-2" />
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Atendimentos Realizados</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl font-bold">83%</span>
-              <span className="text-sm text-muted-foreground">20/24 consultas</span>
-            </div>
-            <Progress value={83} className="h-2" />
+            <Progress value={0} className="h-2" />
           </CardContent>
         </Card>
       </div>
