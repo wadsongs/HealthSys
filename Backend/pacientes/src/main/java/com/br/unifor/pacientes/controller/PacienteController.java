@@ -56,7 +56,7 @@ public class PacienteController {
     @Operation(summary = "Buscar paciente por CPF")
     @GetMapping("/cpf/{cpf}")
     public ResponseEntity<PacienteModel> buscarPorCpf(@PathVariable String cpf) {
-        return ResponseEntity.ok(service.buscarCpf(cpf));
+        return ResponseEntity.ok(service.buscarPorCpf(cpf));
     }
 
     // Atualizar — RF01
