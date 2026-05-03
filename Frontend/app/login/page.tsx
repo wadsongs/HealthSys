@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Activity, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react"
@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { login } from "@/lib/api/auth"
-import { saveAuthSession } from "@/lib/auth-storage"
+import { getToken, saveAuthSession } from "@/lib/auth-storage"
+import { readUserIdFromToken } from "@/lib/jwt"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -21,6 +22,12 @@ export default function LoginPage() {
     email: "",
     senha: "",
   })
+
+  useEffect(() => {
+    if (getToken()) {
+      router.replace("/dashboard")
+    }
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,13 +52,17 @@ export default function LoginPage() {
         senha: formData.senha,
       })
 
+      const userId = readUserIdFromToken(response.token)
+
       saveAuthSession({
         token: response.token,
         nome: response.nome,
+        email: response.email,
         perfil: response.perfil,
+        ...(userId != null ? { userId } : {}),
       })
 
-      router.push("/dashboard")
+      router.replace("/dashboard")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao autenticar no sistema.")
     } finally {

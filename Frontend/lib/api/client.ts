@@ -10,13 +10,21 @@ const BASE_URLS: Record<ServiceName, string> = {
 
 interface RequestOptions extends RequestInit {
   auth?: boolean
+  /** Cabeçalho `X-User-Id` (API de prontuário e outros serviços internos) */
+  userId?: number
 }
 
 async function parseApiError(response: Response): Promise<string> {
   try {
     const data = await response.json()
-    if (typeof data?.message === "string") return data.message
-    if (typeof data?.error === "string") return data.error
+    if (typeof data?.message === "string" && data.message) return data.message
+    if (typeof data?.mensagem === "string" && data.mensagem) return data.mensagem
+    if (typeof data?.error === "string" && data.error) return data.error
+    if (data?.errors && typeof data.errors === "object") {
+      const first = Object.values(data.errors)[0]
+      if (typeof first === "string") return first
+      if (Array.isArray(first) && typeof first[0] === "string") return first[0]
+    }
   } catch {
     // noop
   }
@@ -44,6 +52,10 @@ export async function apiRequest<T>(
     if (token) {
       headers.set("Authorization", `Bearer ${token}`)
     }
+  }
+
+  if (options.userId != null && Number.isFinite(options.userId)) {
+    headers.set("X-User-Id", String(options.userId))
   }
 
   const response = await fetch(`${BASE_URLS[service]}${path}`, {

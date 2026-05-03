@@ -33,12 +33,14 @@ function formatRelativeTime(dateString: string): string {
 
 export function DashboardHeader() {
   const [userName, setUserName] = useState("Usuário")
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const [userProfile, setUserProfile] = useState("Colaborador")
   const [notificacoes, setNotificacoes] = useState<PacienteResponse[]>([])
 
   useEffect(() => {
-    const { nome, perfil } = getStoredUser()
+    const { nome, email, perfil } = getStoredUser()
     if (nome) setUserName(nome)
+    if (email) setUserEmail(email)
     if (perfil) setUserProfile(perfil)
 
     listarPacientesRecentes(3)
@@ -125,8 +127,15 @@ export function DashboardHeader() {
               </div>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col gap-0.5">
+                <span className="font-medium">Minha conta</span>
+                {userEmail ? (
+                  <span className="text-xs font-normal text-muted-foreground">{userEmail}</span>
+                ) : null}
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="cursor-pointer">Perfil</DropdownMenuItem>
             <DropdownMenuItem className="cursor-pointer">Configurações</DropdownMenuItem>

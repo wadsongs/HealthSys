@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Trash2,
   Loader2,
+  FileText,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -174,6 +175,15 @@ export default function PacientesPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link
+                                href={`/dashboard/pacientes/${paciente.id}/prontuario`}
+                                className="flex cursor-pointer items-center gap-2"
+                              >
+                                <FileText className="h-4 w-4" />
+                                Prontuário
+                              </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               className="gap-2 cursor-pointer text-destructive"
                               onClick={() => void handleDelete(paciente.id)}
