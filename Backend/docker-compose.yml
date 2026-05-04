@@ -28,11 +28,14 @@ services:
     depends_on:
       postgres_users:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8081
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_users:5432/healthsys_usuarios
       SPRING_DATASOURCE_USERNAME: wadson
       SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_RABBITMQ_HOST: rabbitmq
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8081/actuator/health || exit 1"]
       interval: 10s
@@ -49,11 +52,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8082
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_patients:5432/healthsyspacientes
       SPRING_DATASOURCE_USERNAME: wadson
       SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_RABBITMQ_HOST: rabbitmq
       REDIS_HOST: redis
       REDIS_PORT: 6379
     healthcheck:
@@ -70,9 +76,12 @@ services:
     depends_on:
       mongo_records:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8083
       SPRING_MONGODB_URI: mongodb://mongo_records:27017/healthsys_prontuario
+      SPRING_RABBITMQ_HOST: rabbitmq
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8083/actuator/health || exit 1"]
       interval: 10s
@@ -98,6 +107,17 @@ services:
       timeout: 5s
       retries: 10
       start_period: 40s
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   postgres_triagem:
     image: postgres:13-alpine
