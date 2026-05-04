@@ -103,3 +103,30 @@ export interface ProntuarioModel {
   logs: LogAuditoriaProntuario[]
 }
 
+export type NivelRiscoTriagem = "VERMELHO" | "LARANJA" | "AMARELO" | "VERDE" | "AZUL"
+
+export type StatusTriagem = "AGUARDANDO" | "EM_ATENDIMENTO" | "FINALIZADO" | "TRANSFERIDO" | "DESISTIU"
+
+export interface TriagemRequest {
+  pacienteId: number
+  nomePaciente: string
+  nivelRisco: NivelRiscoTriagem
+  sintomas?: string
+  observacoes?: string
+  status?: StatusTriagem
+}
+
+export interface TriagemResponse {
+  id: number
+  pacienteId: number
+  nomePaciente: string
+  nivelRisco: NivelRiscoTriagem
+  descricaoRisco: string
+  status: StatusTriagem
+  sintomas?: string
+  observacoes?: string
+  dataHoraEntrada?: string
+  dataHoraAtendimento?: string
+  dataCadastro?: string
+}
+
