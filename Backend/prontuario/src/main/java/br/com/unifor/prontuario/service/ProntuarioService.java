@@ -2,8 +2,6 @@ package br.com.unifor.prontuario.service;
 
 import br.com.unifor.prontuario.exception.ProntuarioNotFoundException;
 import br.com.unifor.prontuario.model.*;
-import br.com.unifor.prontuario.dto.ProntuarioEvent;
-import br.com.unifor.prontuario.mq.ProntuarioEventProducer;
 import br.com.unifor.prontuario.repository.ProntuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,7 +15,6 @@ import java.util.List;
 public class ProntuarioService {
 
     private final ProntuarioRepository repository;
-    private final ProntuarioEventProducer eventProducer;
 
     // Criar prontuário (chamado ao cadastrar paciente)
     public ProntuarioModel criar(Long idPaciente) {
@@ -42,20 +39,7 @@ public class ProntuarioService {
         ProntuarioModel prontuario = buscarOuFalhar(idPaciente);
         prontuario.getConsultas().add(consulta);
         registrarLog(prontuario, idUsuario, "ADICIONOU_CONSULTA");
-        ProntuarioModel salvo = repository.save(prontuario);
-
-        // Enviar evento de triagem
-        String tipoEvento = "EMERGENCIA".equalsIgnoreCase(consulta.getTipoAtendimento()) ? "TRIAGEM_URGENTE" : "TRIAGEM_CRIADA";
-        
-        eventProducer.sendProntuarioEvent(ProntuarioEvent.builder()
-                .idPaciente(idPaciente)
-                .tipoEvento(tipoEvento)
-                .descricao(tipoEvento.equals("TRIAGEM_URGENTE") ? "Triagem urgente detectada!" : "Nova triagem criada")
-                .dataEvento(LocalDateTime.now())
-                .idUsuario(idUsuario)
-                .build());
-
-        return salvo;
+        return repository.save(prontuario);
     }
 
     // Adicionar exame — RF03
@@ -79,19 +63,7 @@ public class ProntuarioService {
         ProntuarioModel prontuario = buscarOuFalhar(idPaciente);
         prontuario.setAlergias(alergias);
         registrarLog(prontuario, idUsuario, "ATUALIZOU_ALERGIAS");
-        ProntuarioModel salvo = repository.save(prontuario);
-
-        ProntuarioEvent event = ProntuarioEvent.builder()
-                .idPaciente(idPaciente)
-                .tipoEvento("ALERGIAS_ATUALIZADAS")
-                .descricao("Alergias atualizadas")
-                .alergias(alergias)
-                .dataEvento(LocalDateTime.now())
-                .idUsuario(idUsuario)
-                .build();
-        eventProducer.sendProntuarioEvent(event);
-
-        return salvo;
+        return repository.save(prontuario);
     }
 
     // Buscar logs de auditoria
