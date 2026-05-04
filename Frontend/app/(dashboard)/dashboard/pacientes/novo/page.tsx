@@ -194,19 +194,19 @@ export default function NovoPacientePage() {
                   className="flex gap-4 h-11 items-center"
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="masculino" id="masculino" />
+                    <RadioGroupItem value="MASCULINO" id="masculino" />
                     <Label htmlFor="masculino" className="font-normal cursor-pointer">
                       Masculino
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="feminino" id="feminino" />
+                    <RadioGroupItem value="FEMININO" id="feminino" />
                     <Label htmlFor="feminino" className="font-normal cursor-pointer">
                       Feminino
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="outro" id="outro" />
+                    <RadioGroupItem value="OUTRO" id="outro" />
                     <Label htmlFor="outro" className="font-normal cursor-pointer">
                       Outro
                     </Label>
