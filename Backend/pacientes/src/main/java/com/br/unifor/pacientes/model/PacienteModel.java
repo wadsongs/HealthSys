@@ -38,7 +38,7 @@ public class PacienteModel {
     private LocalDate dataNascimento;
 
     @NotBlank(message = "O CPF é obrigatório")
-    @CPF(message = "CPF em formato inválido")
+    // @CPF(message = "CPF em formato inválido")
     @Column(unique = true, nullable = false)
     private String cpf;
 

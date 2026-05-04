@@ -69,7 +69,7 @@ public class PacienteController {
     }
 
     // Deletar
-    @Operation(summary = "Deletar um paciente", description = "Remove o paciente pelo seu ID.")
+    @Operation(summary = "Deletar paciente", description = "Remove o paciente pelo seu ID.")
     @ApiResponse(responseCode = "204", description = "Paciente deletado com sucesso")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
