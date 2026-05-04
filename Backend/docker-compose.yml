@@ -80,7 +80,7 @@ services:
         condition: service_healthy
     environment:
       SERVER_PORT: 8083
-      SPRING_MONGODB_URI: mongodb://mongo_records:27017/healthsys_prontuario
+      SPRING_DATA_MONGODB_URI: mongodb://mongo_records:27017/healthsys_prontuario
       SPRING_RABBITMQ_HOST: rabbitmq
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8083/actuator/health || exit 1"]
