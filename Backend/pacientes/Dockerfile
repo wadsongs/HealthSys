@@ -1,7 +1,14 @@
 FROM gradle:8.7-jdk21 AS build
 WORKDIR /app
 
+# Copy only build descriptors first to improve Docker layer caching
 COPY build.gradle settings.gradle ./
+
+# (Optional) keep wrapper files in the image even though we use the installed Gradle
+COPY gradlew gradlew.bat ./
+COPY gradle ./gradle
+
+# Copy sources last (changes here shouldn't invalidate dependency layers)
 COPY src ./src
 
 RUN gradle clean bootJar --no-daemon -x test
