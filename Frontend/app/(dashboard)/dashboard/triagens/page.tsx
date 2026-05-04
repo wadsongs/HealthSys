@@ -1,10 +1,12 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   ClipboardList,
   Clock3,
+  Loader2,
   PlusCircle,
+  RefreshCw,
   Search,
   Siren,
   UserRound,
@@ -25,144 +27,155 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+import { criarTriagem, listarTriagens, atualizarStatusTriagem } from "@/lib/api/triagem"
+import { listarPacientes } from "@/lib/api/pacientes"
+import type { NivelRiscoTriagem, PacienteResponse, StatusTriagem, TriagemResponse } from "@/lib/api/types"
 import { toast } from "sonner"
 
-type Prioridade = "Vermelho" | "Laranja" | "Amarelo" | "Verde" | "Azul"
-
-interface Triagem {
-  id: number
-  paciente: string
-  queixa: string
-  prioridade: Prioridade
-  bpm: string
-  temperatura: string
-  satO2: string
-  horarioChegada: string
-  status: "Aguardando" | "Em atendimento"
+const prioridadeClasses: Record<NivelRiscoTriagem, string> = {
+  VERMELHO: "bg-red-500/15 text-red-700 border-red-500/30",
+  LARANJA: "bg-orange-500/15 text-orange-700 border-orange-500/30",
+  AMARELO: "bg-yellow-500/15 text-yellow-700 border-yellow-500/30",
+  VERDE: "bg-green-500/15 text-green-700 border-green-500/30",
+  AZUL: "bg-blue-500/15 text-blue-700 border-blue-500/30",
 }
 
-const prioridadeClasses: Record<Prioridade, string> = {
-  Vermelho: "bg-red-500/15 text-red-700 border-red-500/30",
-  Laranja: "bg-orange-500/15 text-orange-700 border-orange-500/30",
-  Amarelo: "bg-yellow-500/15 text-yellow-700 border-yellow-500/30",
-  Verde: "bg-green-500/15 text-green-700 border-green-500/30",
-  Azul: "bg-blue-500/15 text-blue-700 border-blue-500/30",
+const prioridadeLabel: Record<NivelRiscoTriagem, string> = {
+  VERMELHO: "Vermelho",
+  LARANJA: "Laranja",
+  AMARELO: "Amarelo",
+  VERDE: "Verde",
+  AZUL: "Azul",
 }
 
-const seedTriagens: Triagem[] = [
-  {
-    id: 1,
-    paciente: "Marcos André Silva",
-    queixa: "Dor torácica intensa",
-    prioridade: "Vermelho",
-    bpm: "122",
-    temperatura: "37.8",
-    satO2: "91",
-    horarioChegada: "14:08",
-    status: "Em atendimento",
-  },
-  {
-    id: 2,
-    paciente: "Luciana Costa",
-    queixa: "Dispneia e tontura",
-    prioridade: "Laranja",
-    bpm: "108",
-    temperatura: "37.2",
-    satO2: "93",
-    horarioChegada: "14:17",
-    status: "Aguardando",
-  },
-  {
-    id: 3,
-    paciente: "Rafael Moreira",
-    queixa: "Febre e dor no corpo",
-    prioridade: "Amarelo",
-    bpm: "96",
-    temperatura: "38.9",
-    satO2: "97",
-    horarioChegada: "14:24",
-    status: "Aguardando",
-  },
-]
+const statusLabel: Record<StatusTriagem, string> = {
+  AGUARDANDO: "Aguardando",
+  EM_ATENDIMENTO: "Em atendimento",
+  FINALIZADO: "Finalizado",
+  TRANSFERIDO: "Transferido",
+  DESISTIU: "Desistiu",
+}
+
+function formatarDataHora(valor?: string) {
+  if (!valor) return "—"
+  const data = new Date(valor)
+  if (isNaN(data.getTime())) return "—"
+  return data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+}
 
 export default function TriagensPage() {
-  const [triagens, setTriagens] = useState<Triagem[]>(seedTriagens)
+  const [triagens, setTriagens] = useState<TriagemResponse[]>([])
+  const [pacientes, setPacientes] = useState<PacienteResponse[]>([])
   const [searchTerm, setSearchTerm] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isUpdatingId, setIsUpdatingId] = useState<number | null>(null)
   const [formData, setFormData] = useState({
-    paciente: "",
-    queixa: "",
-    prioridade: "Verde" as Prioridade,
-    bpm: "",
-    temperatura: "",
-    satO2: "",
+    pacienteId: "",
+    sintomas: "",
+    observacoes: "",
+    prioridade: "VERDE" as NivelRiscoTriagem,
   })
+
+  const carregarDados = async () => {
+    setIsLoading(true)
+    try {
+      const [paginaTriagens, dadosPacientes] = await Promise.all([
+        listarTriagens("size=200&sort=dataHoraEntrada,desc"),
+        listarPacientes(),
+      ])
+      setTriagens(paginaTriagens.content)
+      setPacientes(dadosPacientes)
+    } catch (err) {
+      toast.error("Erro ao carregar triagens", {
+        description: err instanceof Error ? err.message : "Verifique se o backend de triagem está disponível.",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void carregarDados()
+  }, [])
 
   const filtradas = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
     if (!query) return triagens
     return triagens.filter(
       (triagem) =>
-        triagem.paciente.toLowerCase().includes(query) ||
-        triagem.queixa.toLowerCase().includes(query) ||
-        triagem.prioridade.toLowerCase().includes(query)
+        triagem.nomePaciente.toLowerCase().includes(query) ||
+        (triagem.sintomas ?? "").toLowerCase().includes(query) ||
+        prioridadeLabel[triagem.nivelRisco].toLowerCase().includes(query)
     )
   }, [searchTerm, triagens])
 
   const aguardando = useMemo(
-    () => triagens.filter((triagem) => triagem.status === "Aguardando").length,
+    () => triagens.filter((triagem) => triagem.status === "AGUARDANDO").length,
     [triagens]
   )
 
   const criticos = useMemo(
     () =>
-      triagens.filter((triagem) => triagem.prioridade === "Vermelho" || triagem.prioridade === "Laranja")
-        .length,
+      triagens.filter((triagem) => triagem.nivelRisco === "VERMELHO" || triagem.nivelRisco === "LARANJA").length,
     [triagens]
   )
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (
-      !formData.paciente.trim() ||
-      !formData.queixa.trim() ||
-      !formData.bpm.trim() ||
-      !formData.temperatura.trim() ||
-      !formData.satO2.trim()
-    ) {
+    if (!formData.pacienteId || !formData.sintomas.trim()) {
       toast.error("Preencha todos os campos obrigatórios da triagem.")
       return
     }
 
-    const now = new Date()
-    const horarioChegada = now.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-
-    const novaTriagem: Triagem = {
-      id: Date.now(),
-      paciente: formData.paciente.trim(),
-      queixa: formData.queixa.trim(),
-      prioridade: formData.prioridade,
-      bpm: formData.bpm.trim(),
-      temperatura: formData.temperatura.trim(),
-      satO2: formData.satO2.trim(),
-      horarioChegada,
-      status: "Aguardando",
+    const pacienteSelecionado = pacientes.find((paciente) => paciente.id === Number(formData.pacienteId))
+    if (!pacienteSelecionado) {
+      toast.error("Paciente inválido. Selecione um paciente cadastrado.")
+      return
     }
 
-    setTriagens((atual) => [novaTriagem, ...atual])
-    setFormData({
-      paciente: "",
-      queixa: "",
-      prioridade: "Verde",
-      bpm: "",
-      temperatura: "",
-      satO2: "",
-    })
+    setIsSaving(true)
+    try {
+      const novaTriagem = await criarTriagem({
+        pacienteId: pacienteSelecionado.id,
+        nomePaciente: pacienteSelecionado.nome,
+        nivelRisco: formData.prioridade,
+        sintomas: formData.sintomas.trim(),
+        observacoes: formData.observacoes.trim() || undefined,
+      })
 
-    toast.success("Triagem registrada com sucesso.")
+      setTriagens((atual) => [novaTriagem, ...atual])
+      setFormData({
+        pacienteId: "",
+        sintomas: "",
+        observacoes: "",
+        prioridade: "VERDE",
+      })
+
+      toast.success("Triagem registrada com sucesso.")
+    } catch (err) {
+      toast.error("Erro ao registrar triagem", {
+        description: err instanceof Error ? err.message : "Tente novamente em instantes.",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleAtualizarStatus = async (id: number, status: StatusTriagem) => {
+    setIsUpdatingId(id)
+    try {
+      const atualizada = await atualizarStatusTriagem(id, status)
+      setTriagens((atual) => atual.map((item) => (item.id === id ? atualizada : item)))
+      toast.success(`Status atualizado para ${statusLabel[status]}.`)
+    } catch (err) {
+      toast.error("Erro ao atualizar status", {
+        description: err instanceof Error ? err.message : "Tente novamente em instantes.",
+      })
+    } finally {
+      setIsUpdatingId(null)
+    }
   }
 
   return (
@@ -207,7 +220,7 @@ export default function TriagensPage() {
           </CardHeader>
           <CardContent className="flex items-center justify-between">
             <span className="text-2xl font-bold">
-              {triagens.filter((triagem) => triagem.status === "Em atendimento").length}
+              {triagens.filter((triagem) => triagem.status === "EM_ATENDIMENTO").length}
             </span>
             <Timer className="h-5 w-5 text-primary" />
           </CardContent>
@@ -240,6 +253,12 @@ export default function TriagensPage() {
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
             </div>
+            <div className="flex justify-end">
+              <Button variant="outline" className="gap-2" onClick={() => void carregarDados()} disabled={isLoading}>
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                Atualizar
+              </Button>
+            </div>
 
             <div className="overflow-x-auto">
               <Table>
@@ -248,40 +267,74 @@ export default function TriagensPage() {
                     <TableHead>Paciente</TableHead>
                     <TableHead className="hidden lg:table-cell">Queixa</TableHead>
                     <TableHead>Prioridade</TableHead>
-                    <TableHead className="hidden sm:table-cell">Sinais Vitais</TableHead>
+                    <TableHead className="hidden sm:table-cell">Descrição</TableHead>
                     <TableHead>Chegada</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtradas.map((triagem) => (
+                  {filtradas.map((triagem) => {
+                    const bloqueado = isUpdatingId === triagem.id
+                    return (
                     <TableRow key={triagem.id}>
-                      <TableCell className="font-medium">{triagem.paciente}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{triagem.queixa}</TableCell>
+                      <TableCell className="font-medium">{triagem.nomePaciente}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{triagem.sintomas || "—"}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={prioridadeClasses[triagem.prioridade]}>
-                          {triagem.prioridade}
+                        <Badge variant="outline" className={prioridadeClasses[triagem.nivelRisco]}>
+                          {prioridadeLabel[triagem.nivelRisco]}
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">
-                        FC {triagem.bpm} bpm | Temp {triagem.temperatura} C | SpO2 {triagem.satO2}%
+                        {triagem.descricaoRisco}
                       </TableCell>
-                      <TableCell>{triagem.horarioChegada}</TableCell>
+                      <TableCell>{formatarDataHora(triagem.dataHoraEntrada ?? triagem.dataCadastro)}</TableCell>
                       <TableCell>
-                        <Badge variant={triagem.status === "Aguardando" ? "secondary" : "default"}>
-                          {triagem.status}
+                        <Badge variant={triagem.status === "AGUARDANDO" ? "secondary" : "default"}>
+                          {statusLabel[triagem.status]}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {triagem.status === "AGUARDANDO" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={bloqueado}
+                              onClick={() => void handleAtualizarStatus(triagem.id, "EM_ATENDIMENTO")}
+                            >
+                              {bloqueado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Iniciar"}
+                            </Button>
+                          )}
+                          {triagem.status === "EM_ATENDIMENTO" && (
+                            <Button
+                              size="sm"
+                              disabled={bloqueado}
+                              onClick={() => void handleAtualizarStatus(triagem.id, "FINALIZADO")}
+                            >
+                              {bloqueado ? <Loader2 className="h-4 w-4 animate-spin" /> : "Finalizar"}
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  ))}
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
 
-            {filtradas.length === 0 && (
+            {!isLoading && filtradas.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-6">
                 Nenhum paciente encontrado para o filtro informado.
               </p>
+            )}
+
+            {isLoading && (
+              <div className="flex items-center justify-center py-6 text-muted-foreground gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Carregando triagens...
+              </div>
             )}
           </CardContent>
         </Card>
@@ -294,22 +347,31 @@ export default function TriagensPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="paciente">Paciente</Label>
-                <Input
-                  id="paciente"
-                  placeholder="Nome completo"
-                  value={formData.paciente}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, paciente: event.target.value }))}
-                />
+                <Label>Paciente</Label>
+                <Select
+                  value={formData.pacienteId}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, pacienteId: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um paciente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {pacientes.map((paciente) => (
+                      <SelectItem key={paciente.id} value={String(paciente.id)}>
+                        {paciente.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="queixa">Queixa principal</Label>
+                <Label htmlFor="sintomas">Queixa principal</Label>
                 <Textarea
-                  id="queixa"
+                  id="sintomas"
                   placeholder="Descreva a queixa em poucas palavras"
-                  value={formData.queixa}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, queixa: event.target.value }))}
+                  value={formData.sintomas}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, sintomas: event.target.value }))}
                 />
               </div>
 
@@ -317,54 +379,36 @@ export default function TriagensPage() {
                 <Label>Prioridade</Label>
                 <Select
                   value={formData.prioridade}
-                  onValueChange={(value: Prioridade) => setFormData((prev) => ({ ...prev, prioridade: value }))}
+                  onValueChange={(value: NivelRiscoTriagem) =>
+                    setFormData((prev) => ({ ...prev, prioridade: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a prioridade" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Vermelho">Vermelho - Emergente</SelectItem>
-                    <SelectItem value="Laranja">Laranja - Muito urgente</SelectItem>
-                    <SelectItem value="Amarelo">Amarelo - Urgente</SelectItem>
-                    <SelectItem value="Verde">Verde - Pouco urgente</SelectItem>
-                    <SelectItem value="Azul">Azul - Não urgente</SelectItem>
+                    <SelectItem value="VERMELHO">Vermelho - Emergente</SelectItem>
+                    <SelectItem value="LARANJA">Laranja - Muito urgente</SelectItem>
+                    <SelectItem value="AMARELO">Amarelo - Urgente</SelectItem>
+                    <SelectItem value="VERDE">Verde - Pouco urgente</SelectItem>
+                    <SelectItem value="AZUL">Azul - Não urgente</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-2">
-                  <Label htmlFor="bpm">FC</Label>
-                  <Input
-                    id="bpm"
-                    placeholder="bpm"
-                    value={formData.bpm}
-                    onChange={(event) => setFormData((prev) => ({ ...prev, bpm: event.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="temperatura">Temp.</Label>
-                  <Input
-                    id="temperatura"
-                    placeholder="C"
-                    value={formData.temperatura}
-                    onChange={(event) => setFormData((prev) => ({ ...prev, temperatura: event.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="satO2">SpO2</Label>
-                  <Input
-                    id="satO2"
-                    placeholder="%"
-                    value={formData.satO2}
-                    onChange={(event) => setFormData((prev) => ({ ...prev, satO2: event.target.value }))}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="observacoes">Observações</Label>
+                <Textarea
+                  id="observacoes"
+                  placeholder="Informações complementares da triagem"
+                  value={formData.observacoes}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, observacoes: event.target.value }))}
+                />
               </div>
 
-              <Button type="submit" className="w-full gap-2">
-                <PlusCircle className="h-4 w-4" />
-                Adicionar à fila
+              <Button type="submit" className="w-full gap-2" disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
+                {isSaving ? "Registrando..." : "Adicionar à fila"}
               </Button>
             </form>
           </CardContent>

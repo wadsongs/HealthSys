@@ -1,6 +1,6 @@
 import { getToken } from "@/lib/auth-storage";
 
-type ServiceName = "usuarios" | "pacientes" | "prontuario";
+type ServiceName = "usuarios" | "pacientes" | "prontuario" | "triagem";
 
 const GATEWAY_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -8,6 +8,7 @@ const BASE_URLS: Record<ServiceName, string> = {
   usuarios: GATEWAY_URL,
   pacientes: GATEWAY_URL,
   prontuario: GATEWAY_URL,
+  triagem: GATEWAY_URL,
 };
 
 interface RequestOptions extends RequestInit {
