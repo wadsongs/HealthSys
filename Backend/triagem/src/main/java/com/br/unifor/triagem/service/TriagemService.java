@@ -4,7 +4,10 @@ import com.br.unifor.triagem.dto.TriagemRequest;
 import com.br.unifor.triagem.dto.TriagemResponse;
 import com.br.unifor.triagem.exception.TriagemNotFoundException;
 import com.br.unifor.triagem.model.TriagemModel;
+import com.br.unifor.triagem.model.enums.NivelRisco;
 import com.br.unifor.triagem.model.enums.StatusTriagem;
+import com.br.unifor.triagem.mq.TriagemEventProducer;
+import com.br.unifor.triagem.dto.ProntuarioEvent;
 import com.br.unifor.triagem.repository.TriagemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +22,7 @@ import java.util.List;
 public class TriagemService {
 
     private final TriagemRepository repository;
+    private final TriagemEventProducer triagemEventProducer;
 
     public TriagemResponse criar(TriagemRequest request) {
         TriagemModel triagem = TriagemModel.builder()
@@ -30,7 +34,21 @@ public class TriagemService {
                 .observacoes(request.getObservacoes())
                 .dataHoraEntrada(LocalDateTime.now())
                 .build();
-        return toResponse(repository.save(triagem));
+        TriagemModel salvo = repository.save(triagem);
+
+        String tipo = (salvo.getNivelRisco() == NivelRisco.VERMELHO
+                || salvo.getNivelRisco() == NivelRisco.LARANJA)
+                ? "TRIAGEM_URGENTE"
+                : "TRIAGEM_CRIADA";
+        triagemEventProducer.sendTriagemEvent(ProntuarioEvent.builder()
+                .idPaciente(salvo.getPacienteId())
+                .tipoEvento(tipo)
+                .descricao("Triagem registrada: " + salvo.getNomePaciente()
+                        + " (" + salvo.getNivelRisco() + ")")
+                .dataEvento(LocalDateTime.now())
+                .build());
+
+        return toResponse(salvo);
     }
 
     public Page<TriagemResponse> listarTodos(Pageable pageable) {

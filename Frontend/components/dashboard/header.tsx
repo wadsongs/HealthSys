@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Bell, Search, User } from "lucide-react"
+import Link from "next/link"
+import { Bell, Radio, Search, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -17,25 +18,24 @@ import { Badge } from "@/components/ui/badge"
 import { getStoredUser } from "@/lib/auth-storage"
 import { listarPacientesRecentes } from "@/lib/api/pacientes"
 import type { PacienteResponse } from "@/lib/api/types"
-
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString)
-  if (isNaN(date.getTime())) return "—"
-  const diff = Date.now() - date.getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return "agora mesmo"
-  if (mins < 60) return `há ${mins} minuto${mins !== 1 ? "s" : ""}`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `há ${hours} hora${hours !== 1 ? "s" : ""}`
-  const days = Math.floor(hours / 24)
-  return `há ${days} dia${days !== 1 ? "s" : ""}`
-}
+import { useRealtimeNotifications } from "@/components/providers/realtime-notifications-provider"
+import { formatRelativeTime } from "@/lib/format-relative"
 
 export function DashboardHeader() {
+  const { items: alertasTempoReal, clear: limparAlertas, connected: wsConectado } =
+    useRealtimeNotifications()
   const [userName, setUserName] = useState("Usuário")
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [userProfile, setUserProfile] = useState("Colaborador")
   const [notificacoes, setNotificacoes] = useState<PacienteResponse[]>([])
+
+  const contagemBadge =
+    alertasTempoReal.length > 0 ? alertasTempoReal.length : notificacoes.length
+
+  const limparTodasNotificacoes = () => {
+    limparAlertas()
+    setNotificacoes([])
+  }
 
   useEffect(() => {
     const { nome, email, perfil } = getStoredUser()
@@ -75,38 +75,130 @@ export function DashboardHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
-              {notificacoes.length > 0 && (
+              {contagemBadge > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
-                  {notificacoes.length}
+                  {contagemBadge > 99 ? "99+" : contagemBadge}
                 </Badge>
               )}
               <span className="sr-only">Notificações</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notificações</DropdownMenuLabel>
+            <DropdownMenuLabel className="flex items-center justify-between gap-2">
+              <span>Notificações</span>
+              {wsConectado ? (
+                <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground">
+                  <Radio className="h-3 w-3 text-green-600" aria-hidden />
+                  tempo real
+                </span>
+              ) : (
+                <span className="text-xs font-normal text-muted-foreground">tempo real off</span>
+              )}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {notificacoes.length === 0 ? (
+            <div className="px-2 pb-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={limparTodasNotificacoes}
+                disabled={alertasTempoReal.length === 0 && notificacoes.length === 0}
+              >
+                Limpar notificações
+              </Button>
+            </div>
+            {alertasTempoReal.length > 0 && (
+              <>
+                <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">
+                  Alertas (WebSocket · RabbitMQ)
+                </p>
+                {alertasTempoReal.map((item) => {
+                  const hrefTriagem =
+                    item.tipoEvento === "TRIAGEM_CRIADA" ||
+                    item.tipoEvento === "TRIAGEM_URGENTE"
+                  const content = (
+                    <>
+                      <span className="font-medium">
+                        {item.tipoEvento === "ALERGIAS_ATUALIZADAS"
+                          ? "Alergias atualizadas"
+                          : item.tipoEvento === "PACIENTE_CRIADO"
+                            ? "Novo paciente"
+                            : item.tipoEvento === "TRIAGEM_CRIADA"
+                              ? "Nova triagem"
+                              : item.tipoEvento === "TRIAGEM_URGENTE"
+                                ? "Triagem urgente"
+                                : item.tipoEvento}
+                      </span>
+                      <span className="text-xs text-muted-foreground line-clamp-2">
+                        {item.descricao ||
+                          (item.idPaciente != null
+                            ? `Paciente #${item.idPaciente}`
+                            : "Evento recebido")}
+                        {" — "}
+                        {formatRelativeTime(item.receivedAt)}
+                      </span>
+                    </>
+                  )
+                  if (hrefTriagem) {
+                    return (
+                      <DropdownMenuItem key={item.id} asChild className="cursor-pointer">
+                        <Link href="/dashboard/triagens" className="flex flex-col items-start gap-1">
+                          {content}
+                        </Link>
+                      </DropdownMenuItem>
+                    )
+                  }
+                  if (item.tipoEvento === "ALERGIAS_ATUALIZADAS" && item.idPaciente != null) {
+                    return (
+                      <DropdownMenuItem key={item.id} asChild className="cursor-pointer">
+                        <Link
+                          href={`/dashboard/pacientes/${item.idPaciente}/prontuario`}
+                          className="flex flex-col items-start gap-1"
+                        >
+                          {content}
+                        </Link>
+                      </DropdownMenuItem>
+                    )
+                  }
+                  return (
+                    <DropdownMenuItem
+                      key={item.id}
+                      className="flex flex-col items-start gap-1 cursor-default focus:bg-muted/50"
+                    >
+                      {content}
+                    </DropdownMenuItem>
+                  )
+                })}
+                <DropdownMenuSeparator />
+              </>
+            )}
+            <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">
+              Cadastros recentes
+            </p>
+            {notificacoes.length === 0 && alertasTempoReal.length === 0 ? (
               <DropdownMenuItem disabled>
                 <span className="text-muted-foreground text-sm">Nenhuma notificação</span>
               </DropdownMenuItem>
-            ) : (
-              notificacoes.map((paciente) => (
-                <DropdownMenuItem
-                  key={paciente.id}
-                  className="flex flex-col items-start gap-1 cursor-pointer"
-                >
+            ) : null}
+            {notificacoes.map((paciente) => (
+              <DropdownMenuItem
+                key={paciente.id}
+                className="flex flex-col items-start gap-1 cursor-pointer"
+                asChild
+              >
+                <Link href="/dashboard/pacientes">
                   <span className="font-medium">Novo paciente registrado</span>
                   <span className="text-xs text-muted-foreground">
                     {paciente.nome} —{" "}
                     {paciente.dataCadastro ? formatRelativeTime(paciente.dataCadastro) : "—"}
                   </span>
-                </DropdownMenuItem>
-              ))
-            )}
+                </Link>
+              </DropdownMenuItem>
+            ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-center text-primary cursor-pointer justify-center">
-              Ver todos os pacientes
+            <DropdownMenuItem asChild className="text-center text-primary cursor-pointer justify-center">
+              <Link href="/dashboard/pacientes">Ver todos os pacientes</Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

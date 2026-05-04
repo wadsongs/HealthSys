@@ -1,6 +1,7 @@
 import { RequireAuth } from "@/components/auth/require-auth"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
+import { RealtimeNotificationsProvider } from "@/components/providers/realtime-notifications-provider"
 
 export default function DashboardLayout({
   children,
@@ -9,15 +10,17 @@ export default function DashboardLayout({
 }) {
   return (
     <RequireAuth>
-      <div className="min-h-screen flex bg-background">
-        <DashboardSidebar />
-        <div className="flex-1 flex flex-col lg:ml-64">
-          <DashboardHeader />
-          <main className="flex-1 p-4 lg:p-6 overflow-auto">
-            {children}
-          </main>
+      <RealtimeNotificationsProvider>
+        <div className="min-h-screen flex bg-background">
+          <DashboardSidebar />
+          <div className="flex-1 flex flex-col lg:ml-64">
+            <DashboardHeader />
+            <main className="flex-1 p-4 lg:p-6 overflow-auto">
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
+      </RealtimeNotificationsProvider>
     </RequireAuth>
   )
 }
