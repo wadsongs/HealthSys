@@ -21,3 +21,9 @@ export async function atualizarStatusTriagem(id: number, status: StatusTriagem) 
     auth: true,
   })
 }
+
+export async function listarTriagensPorStatus(status: StatusTriagem) {
+  return apiRequest<TriagemResponse[]>("triagem", `/triagens/status/${status}`, {
+    auth: true,
+  })
+}

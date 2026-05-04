@@ -17,31 +17,27 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { listarPacientesRecentes } from "@/lib/api/pacientes"
+import { listarTriagensPorStatus } from "@/lib/api/triagem"
 import type { PacienteResponse } from "@/lib/api/types"
-
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString)
-  if (isNaN(date.getTime())) return "—"
-  const diff = Date.now() - date.getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return "agora mesmo"
-  if (mins < 60) return `há ${mins} minuto${mins !== 1 ? "s" : ""}`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `há ${hours} hora${hours !== 1 ? "s" : ""}`
-  const days = Math.floor(hours / 24)
-  return `há ${days} dia${days !== 1 ? "s" : ""}`
-}
+import { formatRelativeTime } from "@/lib/format-relative"
 
 export default function DashboardPage() {
   const [totalPacientes, setTotalPacientes] = useState<number | null>(null)
+  const [triagensAguardando, setTriagensAguardando] = useState<number | null>(null)
   const [recentes, setRecentes] = useState<PacienteResponse[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    listarPacientesRecentes(5)
-      .then(({ pacientes, total }) => {
-        setRecentes(pacientes)
-        setTotalPacientes(total)
+    Promise.all([
+      listarPacientesRecentes(5),
+      listarTriagensPorStatus("AGUARDANDO").catch(() => null),
+    ])
+      .then(([pacientesResult, triagensPendentes]) => {
+        setRecentes(pacientesResult.pacientes)
+        setTotalPacientes(pacientesResult.total)
+        setTriagensAguardando(
+          triagensPendentes != null ? triagensPendentes.length : null
+        )
       })
       .catch(() => null)
       .finally(() => setLoading(false))
@@ -97,7 +93,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Triagens Pendentes — módulo não disponível */}
+        {/* Triagens Pendentes — status AGUARDANDO */}
         <Card className="border-border/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -108,8 +104,25 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">—</div>
-            <span className="text-xs text-muted-foreground">módulo não disponível</span>
+            <div className="text-2xl font-bold">
+              {loading ? (
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              ) : triagensAguardando != null ? (
+                triagensAguardando.toLocaleString("pt-BR")
+              ) : (
+                "—"
+              )}
+            </div>
+            {!loading && triagensAguardando != null && (
+              <span className="text-xs text-muted-foreground">
+                aguardando classificação / fila
+              </span>
+            )}
+            {!loading && triagensAguardando === null && (
+              <span className="text-xs text-muted-foreground">
+                não foi possível carregar a triagem
+              </span>
+            )}
           </CardContent>
         </Card>
 

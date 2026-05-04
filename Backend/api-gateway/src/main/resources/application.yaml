@@ -30,6 +30,15 @@ spring:
           filters:
             - StripPrefix=0
 
+        # WebSocket / STOMP (usuários) — JWT via Authorization ou ?access_token= (SockJS)
+        - id: usuarios-websocket
+          uri: ${USERS_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/ws/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuthGatewayFilter
+
         # Serviço de Usuários — rotas protegidas
         - id: usuarios-service
           uri: ${USERS_SERVICE_URL:http://localhost:8081}
