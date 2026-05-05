@@ -80,7 +80,7 @@ services:
         condition: service_healthy
     environment:
       SERVER_PORT: 8083
-      SPRING_MONGODB_URI: mongodb://mongo_records:27017/healthsys_prontuario
+      SPRING_DATA_MONGODB_URI: mongodb://mongo_records:27017/healthsys_prontuario
       SPRING_RABBITMQ_HOST: rabbitmq
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8083/actuator/health || exit 1"]
@@ -96,11 +96,17 @@ services:
     depends_on:
       postgres_triagem:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8084
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_triagem:5432/healthsys_triagem
       SPRING_DATASOURCE_USERNAME: wadson
       SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8084/actuator/health || exit 1"]
       interval: 10s

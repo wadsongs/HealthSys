@@ -3,18 +3,45 @@ spring:
     name: api-gateway
   cloud:
     gateway:
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        corsConfigurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "http://localhost:*"
+              - "http://127.0.0.1:*"
+              - "http://26.147.223.144:*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
       routes:
         # Serviço de Usuários — rotas públicas (sem JWT)
         - id: usuarios-auth
-          uri: http://localhost:8081
+          uri: ${USERS_SERVICE_URL:http://localhost:8081}
           predicates:
             - Path=/auth/**
           filters:
             - StripPrefix=0
 
+        # WebSocket / STOMP (usuários) — JWT via Authorization ou ?access_token= (SockJS)
+        - id: usuarios-websocket
+          uri: ${USERS_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/ws/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuthGatewayFilter
+
         # Serviço de Usuários — rotas protegidas
         - id: usuarios-service
-          uri: http://localhost:8081
+          uri: ${USERS_SERVICE_URL:http://localhost:8081}
           predicates:
             - Path=/usuarios/**
           filters:
@@ -23,7 +50,7 @@ spring:
 
         # Serviço de Prontuário — rotas protegidas
         - id: prontuario-service
-          uri: http://localhost:8083
+          uri: ${RECORDS_SERVICE_URL:http://localhost:8083}
           predicates:
             - Path=/prontuarios/**
           filters:
@@ -32,7 +59,7 @@ spring:
 
         # Serviço de Pacientes
         - id: paciente-service
-          uri: http://localhost:8082
+          uri: ${PATIENTS_SERVICE_URL:http://localhost:8082}
           predicates:
             - Path=/pacientes/**
           filters:
@@ -41,7 +68,7 @@ spring:
 
         # Serviço de Triagem
         - id: triagem-service
-          uri: http://localhost:8084
+          uri: ${TRIAGE_SERVICE_URL:http://localhost:8084}
           predicates:
             - Path=/triagens/**
           filters:

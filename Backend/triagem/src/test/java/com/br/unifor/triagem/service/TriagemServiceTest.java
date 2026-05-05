@@ -6,6 +6,7 @@ import com.br.unifor.triagem.exception.TriagemNotFoundException;
 import com.br.unifor.triagem.model.TriagemModel;
 import com.br.unifor.triagem.model.enums.NivelRisco;
 import com.br.unifor.triagem.model.enums.StatusTriagem;
+import com.br.unifor.triagem.mq.TriagemEventProducer;
 import com.br.unifor.triagem.repository.TriagemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,6 +31,9 @@ class TriagemServiceTest {
 
     @Mock
     private TriagemRepository repository;
+
+    @Mock
+    private TriagemEventProducer triagemEventProducer;
 
     @InjectMocks
     private TriagemService service;
