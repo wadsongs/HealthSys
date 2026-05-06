@@ -17,6 +17,22 @@ interface RequestOptions extends RequestInit {
   userId?: number;
 }
 
+export class ApiError extends Error {
+  readonly status: number;
+  readonly statusText: string;
+
+  constructor(message: string, status: number, statusText: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.statusText = statusText;
+  }
+}
+
+export function isApiError(err: unknown): err is ApiError {
+  return err instanceof Error && (err as ApiError).name === "ApiError" && typeof (err as ApiError).status === "number";
+}
+
 async function parseApiError(response: Response): Promise<string> {
   try {
     const data = await response.json();
@@ -67,7 +83,7 @@ export async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    throw new Error(await parseApiError(response));
+    throw new ApiError(await parseApiError(response), response.status, response.statusText);
   }
 
   if (response.status === 204) {
