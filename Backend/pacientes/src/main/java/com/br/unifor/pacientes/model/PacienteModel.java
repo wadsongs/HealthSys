@@ -65,13 +65,13 @@ public class PacienteModel {
     private LocalDateTime dataAtualizacao;
 
     @Builder.Default
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "paciente_alergia", joinColumns = @JoinColumn(name = "paciente_id"))
     @Column(name = "alergia")
     private List<String> alergias = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "paciente", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "paciente", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<VacinaModel> vacinas = new ArrayList<>();
 

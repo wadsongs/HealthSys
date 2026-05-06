@@ -94,7 +94,7 @@ public class JwtAuthGatewayFilter extends AbstractGatewayFilterFactory<JwtAuthGa
         if (origin != null && !origin.isBlank()) {
             exchange.getResponse().getHeaders().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
             exchange.getResponse().getHeaders().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
-            exchange.getResponse().getHeaders().add(HttpHeaders.VARY, "Origin");
+            exchange.getResponse().getHeaders().set(HttpHeaders.VARY, "Origin");
             exchange.getResponse().getHeaders().set(
                     HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
                     exchange.getRequest().getHeaders().getFirst(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS) != null

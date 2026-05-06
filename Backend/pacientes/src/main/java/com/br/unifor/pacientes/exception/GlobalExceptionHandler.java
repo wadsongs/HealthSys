@@ -21,8 +21,8 @@ public class GlobalExceptionHandler {
     }
 
     // CPF duplicado → 409
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, Object>> handleConflict(RuntimeException ex) {
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleConflict(ConflictException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(erro(ex.getMessage()));
     }
 

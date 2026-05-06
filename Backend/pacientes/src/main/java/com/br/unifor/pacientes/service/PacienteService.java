@@ -1,5 +1,6 @@
 package com.br.unifor.pacientes.service;
 
+import com.br.unifor.pacientes.exception.ConflictException;
 import com.br.unifor.pacientes.exception.PacienteNotFoundException;
 import com.br.unifor.pacientes.model.PacienteModel;
 import com.br.unifor.pacientes.repository.PacienteRepository;
@@ -22,7 +23,7 @@ public class PacienteService {
 
     public PacienteModel criar(PacienteModel paciente) {
         if (repository.existsByCpf(paciente.getCpf())) {
-            throw new RuntimeException("CPF já cadastrado: " + paciente.getCpf());
+            throw new ConflictException("CPF já cadastrado: " + paciente.getCpf());
         }
         PacienteModel salvo = repository.save(paciente);
         
@@ -46,7 +47,7 @@ public class PacienteService {
 
         if (!existente.getCpf().equals(dados.getCpf())
                 && repository.existsByCpf(dados.getCpf())) {
-            throw new RuntimeException("CPF já cadastrado: " + dados.getCpf());
+            throw new ConflictException("CPF já cadastrado: " + dados.getCpf());
         }
 
         existente.setNome(dados.getNome());
