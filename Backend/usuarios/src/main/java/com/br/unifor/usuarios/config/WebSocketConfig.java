@@ -24,6 +24,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         "http://127.0.0.1:*",
                         "http://26.147.223.144:*"
                 )
-                .withSockJS();
+                .withSockJS()
+                .setSuppressCors(true);
     }
 }

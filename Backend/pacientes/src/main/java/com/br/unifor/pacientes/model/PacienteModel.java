@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.validator.constraints.br.CPF;
@@ -65,12 +66,14 @@ public class PacienteModel {
     private LocalDateTime dataAtualizacao;
 
     @Builder.Default
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
+    @BatchSize(size = 10)
     @CollectionTable(name = "paciente_alergia", joinColumns = @JoinColumn(name = "paciente_id"))
     @Column(name = "alergia")
     private List<String> alergias = new ArrayList<>();
 
     @Builder.Default
+    @BatchSize(size = 10)
     @OneToMany(mappedBy = "paciente", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<VacinaModel> vacinas = new ArrayList<>();

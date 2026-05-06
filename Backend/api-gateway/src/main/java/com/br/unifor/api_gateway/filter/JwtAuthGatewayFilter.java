@@ -66,7 +66,6 @@ public class JwtAuthGatewayFilter extends AbstractGatewayFilterFactory<JwtAuthGa
 
                 return chain.filter(exchangeModificado);
             } catch (Exception e) {
-
                 log.error("Token inválido: {}", e.getMessage());
                 return semAutorizacao(exchange, "Token inválido ou expirado");
             }
@@ -79,39 +78,21 @@ public class JwtAuthGatewayFilter extends AbstractGatewayFilterFactory<JwtAuthGa
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-
     }
 
     private SecretKey getChave() {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    private Mono<Void> semAutorizacao (ServerWebExchange exchange, String mensagem) {
-        log.warn("Acesso negado: {}" ,mensagem);
-        // Se bloquearmos uma requisição cross-origin sem headers CORS, o browser acusa "erro de CORS".
-        // Aqui refletimos o Origin para manter o comportamento do globalcors no caminho de erro.
-        String origin = exchange.getRequest().getHeaders().getFirst(HttpHeaders.ORIGIN);
-        if (origin != null && !origin.isBlank()) {
-            exchange.getResponse().getHeaders().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
-            exchange.getResponse().getHeaders().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
-            exchange.getResponse().getHeaders().add(HttpHeaders.VARY, "Origin");
-            exchange.getResponse().getHeaders().set(
-                    HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
-                    exchange.getRequest().getHeaders().getFirst(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS) != null
-                            ? exchange.getRequest().getHeaders().getFirst(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS)
-                            : "*"
-            );
-            exchange.getResponse().getHeaders().set(
-                    HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS,
-                    "GET,POST,PUT,PATCH,DELETE,OPTIONS"
-            );
-        }
+    private Mono<Void> semAutorizacao(ServerWebExchange exchange, String mensagem) {
+        log.warn("Acesso negado: {}", mensagem);
+
+        // Headers de CORS removidos para evitar conflito com o globalcors do Gateway
         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
         return exchange.getResponse().setComplete();
     }
 
     public static class Config {
-
+        // Configurações adicionais do filtro, se necessárias no futuro
     }
-
 }
