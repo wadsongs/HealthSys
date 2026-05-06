@@ -19,7 +19,8 @@ spring:
               - PATCH
               - OPTIONS
             allowedHeaders:
-              - "*"
+              - "Content-Type"
+              - "Authorization"
             allowCredentials: true
       routes:
         # Serviço de Usuários — rotas públicas (sem JWT)
@@ -27,6 +28,14 @@ spring:
           uri: ${USERS_SERVICE_URL:http://localhost:8081}
           predicates:
             - Path=/auth/**
+          filters:
+            - StripPrefix=0
+
+        # SockJS info check — sem auth (handshake inicial do SockJS antes do token)
+        - id: usuarios-websocket-info
+          uri: ${USERS_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/ws/info
           filters:
             - StripPrefix=0
 
