@@ -1,5 +1,6 @@
 package com.br.unifor.pacientes.controller;
 
+import com.br.unifor.pacientes.dto.PacienteResponseDTO; // <-- Novo import
 import com.br.unifor.pacientes.model.PacienteModel;
 import com.br.unifor.pacientes.service.PacienteService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,7 +22,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "Pacientes", description = "Gerenciamento de Pacientes")
 @SecurityRequirement(name = "Bearer Auth")
-
 public class PacienteController {
 
     private final PacienteService service;
@@ -30,14 +30,14 @@ public class PacienteController {
     @Operation(summary = "Cadastrar paciente", description = "Salva um novo paciente no banco de dados.")
     @ApiResponse(responseCode = "201", description = "Paciente criado com sucesso")
     @PostMapping
-    public ResponseEntity<PacienteModel> criar(@RequestBody @Valid PacienteModel paciente) {
+    public ResponseEntity<PacienteResponseDTO> criar(@RequestBody @Valid PacienteModel paciente) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.criar(paciente));
     }
 
     // Listar todos com paginação
     @Operation(summary = "Listar pacientes")
     @GetMapping
-    public ResponseEntity<Page<PacienteModel>> listarTodos(Pageable pageable) {
+    public ResponseEntity<Page<PacienteResponseDTO>> listarTodos(Pageable pageable) {
         return ResponseEntity.status(HttpStatus.OK).body(service.listarTodos(pageable));
     }
 
@@ -48,21 +48,21 @@ public class PacienteController {
             @ApiResponse(responseCode = "404", description = "Paciente não encontrado")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<PacienteModel> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<PacienteResponseDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(service.buscarPorId(id));
     }
 
     // Buscar por CPF
     @Operation(summary = "Buscar paciente por CPF")
     @GetMapping("/cpf/{cpf}")
-    public ResponseEntity<PacienteModel> buscarPorCpf(@PathVariable String cpf) {
+    public ResponseEntity<PacienteResponseDTO> buscarPorCpf(@PathVariable String cpf) {
         return ResponseEntity.ok(service.buscarPorCpf(cpf));
     }
 
-    // Atualizar — RF01
+    // Atualizar
     @Operation(summary = "Atualizar paciente")
     @PutMapping("/{id}")
-    public ResponseEntity<PacienteModel> atualizar(
+    public ResponseEntity<PacienteResponseDTO> atualizar(
             @PathVariable Long id,
             @RequestBody @Valid PacienteModel paciente) {
         return ResponseEntity.ok(service.atualizar(id, paciente));

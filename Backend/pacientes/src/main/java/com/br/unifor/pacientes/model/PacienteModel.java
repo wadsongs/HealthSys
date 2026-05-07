@@ -66,7 +66,7 @@ public class PacienteModel {
     private LocalDateTime dataAtualizacao;
 
     @Builder.Default
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection
     @BatchSize(size = 10)
     @CollectionTable(name = "paciente_alergia", joinColumns = @JoinColumn(name = "paciente_id"))
     @Column(name = "alergia")
