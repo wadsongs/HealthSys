@@ -26,23 +26,31 @@ jobs:
 
       # --- BUILD DO SERVIÇO EM GRADLE ---
       - name: Tornar o wrapper do Gradle executável
-        working-directory: ./pacientes
+        working-directory: ./Backend/pacientes
         run: chmod +x gradlew
 
       - name: Build e Testes - Pacientes (Gradle)
-        working-directory: ./pacientes
+        working-directory: ./Backend/pacientes
         run: ./gradlew build
 
       # --- BUILD DOS SERVIÇOS EM MAVEN ---
       - name: Build e Testes - Prontuário (Maven)
-        working-directory: ./prontuario
+        working-directory: ./Backend/prontuario
         run: mvn clean install
 
-      # Você pode copiar o bloco acima para os outros serviços (usuarios, triagem, gateway)
       - name: Build e Testes - Usuários (Maven)
-        working-directory: ./usuarios
+        working-directory: ./Backend/usuarios
+        run: mvn clean install
+
+      - name: Build e Testes - Triagem (Maven)
+        working-directory: ./Backend/triagem
+        run: mvn clean install
+
+      - name: Build e Testes - API Gateway (Maven)
+        working-directory: ./Backend/api-gateway
         run: mvn clean install
 
       # --- VALIDAÇÃO DE INFRAESTRUTURA ---
       - name: Validar build das imagens Docker
+        working-directory: ./Backend
         run: docker compose build
