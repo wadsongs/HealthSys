@@ -56,6 +56,7 @@ services:
         condition: service_healthy
     environment:
       SERVER_PORT: 8082
+      MANAGEMENT_METRICS_TAGS_APPLICATION: pacientes
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_patients:5432/healthsyspacientes
       SPRING_DATASOURCE_USERNAME: wadson
       SPRING_DATASOURCE_PASSWORD: postgres
@@ -197,9 +198,32 @@ services:
       timeout: 3s
       retries: 10
 
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - api-gateway
+      - usuarios
+      - pacientes
+      - prontuario
+      - triagem
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+
 volumes:
   postgres_users_data:
   postgres_patients_data:
   postgres_triagem_data:
   mongo_records_data:
   redis_data:
+  grafana_data:
