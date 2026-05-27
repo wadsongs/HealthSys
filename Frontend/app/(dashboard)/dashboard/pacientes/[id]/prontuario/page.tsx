@@ -49,9 +49,11 @@ import {
 } from "@/lib/api/prontuario"
 import type { PacienteResponse, ProntuarioModel } from "@/lib/api/types"
 import { getUserId } from "@/lib/auth-storage"
+import { isApiError } from "@/lib/api/client"
 import { toast } from "sonner"
 
 function isNotFound(err: unknown): boolean {
+  if (isApiError(err)) return err.status === 404
   return err instanceof Error && /\b404\b/.test(err.message)
 }
 
