@@ -1,0 +1,48 @@
+name: CI HealthSys
+
+# Define quando o pipeline vai rodar (ao fazer push ou pull request na branch main)
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    name: Build e Testes Unitários
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v4
+
+      # Pelos seus logs, vi que você está usando a versão 21
+      - name: Configurar JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven' # Ajuda a deixar o pipeline mais rápido
+
+      # --- BUILD DO SERVIÇO EM GRADLE ---
+      - name: Tornar o wrapper do Gradle executável
+        working-directory: ./pacientes
+        run: chmod +x gradlew
+
+      - name: Build e Testes - Pacientes (Gradle)
+        working-directory: ./pacientes
+        run: ./gradlew build
+
+      # --- BUILD DOS SERVIÇOS EM MAVEN ---
+      - name: Build e Testes - Prontuário (Maven)
+        working-directory: ./prontuario
+        run: mvn clean install
+
+      # Você pode copiar o bloco acima para os outros serviços (usuarios, triagem, gateway)
+      - name: Build e Testes - Usuários (Maven)
+        working-directory: ./usuarios
+        run: mvn clean install
+
+      # --- VALIDAÇÃO DE INFRAESTRUTURA ---
+      - name: Validar build das imagens Docker
+        run: docker compose build
