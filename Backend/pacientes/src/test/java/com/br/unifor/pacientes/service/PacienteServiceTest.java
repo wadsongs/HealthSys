@@ -1,5 +1,6 @@
 package com.br.unifor.pacientes.service;
 
+import com.br.unifor.pacientes.dto.PacienteResponseDTO;
 import com.br.unifor.pacientes.model.PacienteModel;
 import com.br.unifor.pacientes.repository.PacienteRepository;
 import com.br.unifor.pacientes.support.PacienteTestDataFactory;
@@ -9,6 +10,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +39,7 @@ class PacienteServiceTest {
 
         when(repository.save(entrada)).thenReturn(salvo);
 
-        PacienteModel resultado = service.salvar(entrada);
+        PacienteResponseDTO resultado = service.criar(entrada);
 
         assertEquals(1L, resultado.getId());
         verify(repository).save(entrada);
@@ -46,9 +50,11 @@ class PacienteServiceTest {
     void listarTodosDeveRetornarDados() {
         when(repository.findAll()).thenReturn(List.of(PacienteTestDataFactory.pacienteValidoComId(1L)));
 
-        List<PacienteModel> resultado = service.listarTodos();
 
-        assertEquals(1, resultado.size());
+        Pageable paginacao = PageRequest.of(0, 10);
+
+        Page<PacienteResponseDTO> resultado = service.listarTodos(paginacao);
+        assertEquals(1, resultado.getContent().size());
         verify(repository).findAll();
     }
 
@@ -57,10 +63,9 @@ class PacienteServiceTest {
     void buscarPorIdDeveRetornarOptionalComPaciente() {
         when(repository.findById(1L)).thenReturn(Optional.of(PacienteTestDataFactory.pacienteValidoComId(1L)));
 
-        Optional<PacienteModel> resultado = service.buscarPorId(1L);
+        PacienteResponseDTO resultado = service.buscarPorId(1L);
 
-        assertTrue(resultado.isPresent());
-        assertEquals("Ana Silva", resultado.get().getNome());
+        assertEquals("Ana Silva", resultado.getNome());
         verify(repository).findById(1L);
     }
 

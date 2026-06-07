@@ -16,15 +16,13 @@ jobs:
       - name: Baixar o código do repositório
         uses: actions/checkout@v4
 
-      # Pelos seus logs, vi que você está usando a versão 21
       - name: Configurar JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'maven' # Ajuda a deixar o pipeline mais rápido
+          cache: 'maven'
 
-      # --- BUILD DO SERVIÇO EM GRADLE ---
       - name: Tornar o wrapper do Gradle executável
         working-directory: ./Backend/pacientes
         run: chmod +x gradlew
@@ -33,7 +31,6 @@ jobs:
         working-directory: ./Backend/pacientes
         run: ./gradlew build
 
-      # --- BUILD DOS SERVIÇOS EM MAVEN ---
       - name: Build e Testes - Prontuário (Maven)
         working-directory: ./Backend/prontuario
         run: mvn clean install
@@ -50,7 +47,7 @@ jobs:
         working-directory: ./Backend/api-gateway
         run: mvn clean install
 
-      # --- VALIDAÇÃO DE INFRAESTRUTURA ---
+
       - name: Validar build das imagens Docker
         working-directory: ./Backend
         run: docker compose build
