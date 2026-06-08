@@ -1,7 +1,7 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.5.13'
-	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.springframework.boot' version '3.3.5'
+	id 'io.spring.dependency-management' version '1.1.6'
 }
 
 group = 'com.br.unifor'
@@ -34,7 +34,7 @@ dependencies {
 	// RabbitMQ para notificações assíncronas
 	implementation 'org.springframework.boot:spring-boot-starter-amqp'
 
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
 
 	compileOnly 'org.projectlombok:lombok:1.18.36'
 	annotationProcessor 'org.projectlombok:lombok:1.18.36'
@@ -45,6 +45,20 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// CI roda apenas testes de unidade. Testes marcados com @Tag("integration")
+// (ex.: PacienteMigrationTest, que exige PostgreSQL real) ficam de fora do
+// `build`/`test` e rodam sob demanda via `gradle integrationTest`.
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeTags 'integration'
+	}
+}
+
+tasks.register('integrationTest', Test) {
+	description = 'Executa testes de integração (requer PostgreSQL via docker-compose).'
+	group = 'verification'
+	useJUnitPlatform {
+		includeTags 'integration'
+	}
+	shouldRunAfter tasks.named('test')
 }

@@ -4,4 +4,5 @@ services:
   frontend:
     build: .
     ports:
-      - "3001:3000"
+      # Host 3000 (mesma porta do `npm run dev`). O Grafana usa a 3001.
+      - "3000:3000"

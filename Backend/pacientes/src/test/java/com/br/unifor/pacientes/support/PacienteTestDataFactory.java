@@ -15,7 +15,7 @@ public final class PacienteTestDataFactory {
         paciente.setNome("Ana Silva");
         paciente.setDataNascimento(LocalDate.of(1990, 10, 10));
         paciente.setCpf("52998224725");
-        paciente.setSexo("F");
+        paciente.setSexo(PacienteModel.Sexo.FEMININO);
         paciente.setTelefone("85999999999");
         paciente.setAlergias(new ArrayList<>());
         paciente.setVacinas(new ArrayList<>());
@@ -28,4 +28,3 @@ public final class PacienteTestDataFactory {
         return paciente;
     }
 }
-

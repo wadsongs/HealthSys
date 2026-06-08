@@ -214,7 +214,8 @@ services:
   grafana:
     image: grafana/grafana:latest
     ports:
-      - "3000:3000"
+      # Host 3001 -> evita conflito com o Frontend Next.js (host 3000).
+      - "3001:3000"
     depends_on:
       - prometheus
     volumes:

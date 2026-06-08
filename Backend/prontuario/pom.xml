@@ -5,8 +5,8 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<!-- Alinhar com os demais serviços do monorepo (api-gateway/usuarios) -->
-		<version>3.2.5</version>
+		<!-- Versão única do monorepo: Spring Boot 3.3.5 (ver README › Stack) -->
+		<version>3.3.5</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>br.com.unifor</groupId>
@@ -64,8 +64,8 @@
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<!-- Compatível com Spring Boot 3.2.x (mesma versão usada no serviço usuarios) -->
-			<version>2.5.0</version>
+			<!-- Compatível com Spring Boot 3.3.x (versão única do monorepo) -->
+			<version>2.6.0</version>
 		</dependency>
 
 		<!-- Lombok -->

@@ -1,5 +1,8 @@
 package com.br.unifor.pacientes.controller;
 
+import com.br.unifor.pacientes.dto.PacienteResponseDTO;
+import com.br.unifor.pacientes.exception.GlobalExceptionHandler;
+import com.br.unifor.pacientes.exception.PacienteNotFoundException;
 import com.br.unifor.pacientes.model.PacienteModel;
 import com.br.unifor.pacientes.service.PacienteService;
 import com.br.unifor.pacientes.support.PacienteTestDataFactory;
@@ -12,13 +15,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -53,17 +58,22 @@ class PacienteControllerTest {
 
         mockMvc = MockMvcBuilders
                 .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setValidator(validator)
                 .build();
+    }
+
+    private PacienteResponseDTO dto(Long id) {
+        return PacienteResponseDTO.fromModel(PacienteTestDataFactory.pacienteValidoComId(id));
     }
 
     @Test
     @DisplayName("POST /pacientes deve retornar 201 para payload valido")
     void criarDeveRetornarCreated() throws Exception {
         PacienteModel entrada = PacienteTestDataFactory.pacienteValidoSemId();
-        PacienteModel salvo = PacienteTestDataFactory.pacienteValidoComId(1L);
 
-        when(service.salvar(any(PacienteModel.class))).thenReturn(salvo);
+        when(service.criar(any(PacienteModel.class))).thenReturn(dto(1L));
 
         mockMvc.perform(post("/pacientes")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -84,7 +94,7 @@ class PacienteControllerTest {
                         .content(objectMapper.writeValueAsString(invalido)))
                 .andExpect(status().isBadRequest());
 
-        verify(service, never()).salvar(any(PacienteModel.class));
+        verify(service, never()).criar(any(PacienteModel.class));
     }
 
     @Test
@@ -98,35 +108,35 @@ class PacienteControllerTest {
                         .content(objectMapper.writeValueAsString(invalido)))
                 .andExpect(status().isBadRequest());
 
-        verify(service, never()).salvar(any(PacienteModel.class));
+        verify(service, never()).criar(any(PacienteModel.class));
     }
 
     @Test
-    @DisplayName("POST /pacientes deve retornar 400 quando cpf for invalido")
-    void criarDeveRetornarBadRequestQuandoCpfForInvalido() throws Exception {
+    @DisplayName("POST /pacientes deve retornar 400 quando cpf estiver vazio")
+    void criarDeveRetornarBadRequestQuandoCpfForVazio() throws Exception {
         PacienteModel invalido = PacienteTestDataFactory.pacienteValidoSemId();
-        invalido.setCpf("123");
+        invalido.setCpf(" ");
 
         mockMvc.perform(post("/pacientes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalido)))
                 .andExpect(status().isBadRequest());
 
-        verify(service, never()).salvar(any(PacienteModel.class));
+        verify(service, never()).criar(any(PacienteModel.class));
     }
 
     @Test
-    @DisplayName("POST /pacientes deve retornar 400 quando sexo estiver vazio")
-    void criarDeveRetornarBadRequestQuandoSexoForVazio() throws Exception {
+    @DisplayName("POST /pacientes deve retornar 400 quando sexo estiver ausente")
+    void criarDeveRetornarBadRequestQuandoSexoForAusente() throws Exception {
         PacienteModel invalido = PacienteTestDataFactory.pacienteValidoSemId();
-        invalido.setSexo(" ");
+        invalido.setSexo(null);
 
         mockMvc.perform(post("/pacientes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalido)))
                 .andExpect(status().isBadRequest());
 
-        verify(service, never()).salvar(any(PacienteModel.class));
+        verify(service, never()).criar(any(PacienteModel.class));
     }
 
     @Test
@@ -140,7 +150,7 @@ class PacienteControllerTest {
                         .content(objectMapper.writeValueAsString(invalido)))
                 .andExpect(status().isBadRequest());
 
-        verify(service, never()).salvar(any(PacienteModel.class));
+        verify(service, never()).criar(any(PacienteModel.class));
     }
 
     @Test
@@ -154,7 +164,7 @@ class PacienteControllerTest {
                         .content(objectMapper.writeValueAsString(invalido)))
                 .andExpect(status().isBadRequest());
 
-        verify(service, never()).salvar(any(PacienteModel.class));
+        verify(service, never()).criar(any(PacienteModel.class));
     }
 
     @Test
@@ -167,23 +177,24 @@ class PacienteControllerTest {
                         .content(jsonInvalido))
                 .andExpect(status().isBadRequest());
 
-        verify(service, never()).salvar(any(PacienteModel.class));
+        verify(service, never()).criar(any(PacienteModel.class));
     }
 
     @Test
-    @DisplayName("GET /pacientes deve retornar 200")
+    @DisplayName("GET /pacientes deve retornar 200 com pagina")
     void listarTodosDeveRetornarOk() throws Exception {
-        when(service.listarTodos()).thenReturn(List.of(PacienteTestDataFactory.pacienteValidoComId(1L)));
+        when(service.listarTodos(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(dto(1L))));
 
         mockMvc.perform(get("/pacientes"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1L));
+                .andExpect(jsonPath("$.content[0].id").value(1L));
     }
 
     @Test
     @DisplayName("GET /pacientes/{id} deve retornar 200 quando encontrar")
     void buscarPorIdDeveRetornarOkQuandoEncontrar() throws Exception {
-        when(service.buscarPorId(1L)).thenReturn(Optional.of(PacienteTestDataFactory.pacienteValidoComId(1L)));
+        when(service.buscarPorId(1L)).thenReturn(dto(1L));
 
         mockMvc.perform(get("/pacientes/{id}", 1L))
                 .andExpect(status().isOk())
@@ -193,7 +204,7 @@ class PacienteControllerTest {
     @Test
     @DisplayName("GET /pacientes/{id} deve retornar 404 quando nao encontrar")
     void buscarPorIdDeveRetornarNotFoundQuandoNaoEncontrar() throws Exception {
-        when(service.buscarPorId(999L)).thenReturn(Optional.empty());
+        when(service.buscarPorId(999L)).thenThrow(new PacienteNotFoundException(999L));
 
         mockMvc.perform(get("/pacientes/{id}", 999L))
                 .andExpect(status().isNotFound());
@@ -208,4 +219,3 @@ class PacienteControllerTest {
         verify(service).deletar(1L);
     }
 }
-

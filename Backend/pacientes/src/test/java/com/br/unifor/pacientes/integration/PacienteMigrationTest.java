@@ -1,6 +1,7 @@
 package com.br.unifor.pacientes.integration;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -8,6 +9,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+// Teste de integração: requer um PostgreSQL real (sobe via docker-compose).
+// Excluído do `gradle test`/`build` da CI; rode com `gradle integrationTest`.
+@Tag("integration")
 @SpringBootTest
 class PacienteMigrationTest {
 
