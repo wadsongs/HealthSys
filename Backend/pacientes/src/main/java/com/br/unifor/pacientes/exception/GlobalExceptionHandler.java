@@ -2,6 +2,7 @@ package com.br.unifor.pacientes.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,6 +19,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PacienteNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(PacienteNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(erro(ex.getMessage()));
+    }
+
+    // Corpo da requisição ilegível (JSON malformado/ausente) → 400
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleUnreadable(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest().body(erro("Corpo da requisição inválido ou ausente"));
     }
 
     // CPF duplicado → 409

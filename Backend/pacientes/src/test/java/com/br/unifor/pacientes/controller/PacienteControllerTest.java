@@ -1,27 +1,20 @@
 package com.br.unifor.pacientes.controller;
 
 import com.br.unifor.pacientes.dto.PacienteResponseDTO;
-import com.br.unifor.pacientes.exception.GlobalExceptionHandler;
 import com.br.unifor.pacientes.exception.PacienteNotFoundException;
 import com.br.unifor.pacientes.model.PacienteModel;
 import com.br.unifor.pacientes.service.PacienteService;
 import com.br.unifor.pacientes.support.PacienteTestDataFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.util.List;
 
@@ -35,34 +28,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(controllers = PacienteController.class)
 class PacienteControllerTest {
 
+    @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
     private ObjectMapper objectMapper;
 
-    @Mock
+    @MockBean
     private PacienteService service;
-
-    @InjectMocks
-    private PacienteController controller;
-
-    @BeforeEach
-    void setup() {
-        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
-        validator.afterPropertiesSet();
-
-        objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-
-        mockMvc = MockMvcBuilders
-                .standaloneSetup(controller)
-                .setControllerAdvice(new GlobalExceptionHandler())
-                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
-                .setValidator(validator)
-                .build();
-    }
 
     private PacienteResponseDTO dto(Long id) {
         return PacienteResponseDTO.fromModel(PacienteTestDataFactory.pacienteValidoComId(id));
@@ -79,7 +55,7 @@ class PacienteControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(entrada)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.nome").value("Ana Silva"));
     }
 
@@ -188,7 +164,7 @@ class PacienteControllerTest {
 
         mockMvc.perform(get("/pacientes"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(1L));
+                .andExpect(jsonPath("$.content[0].id").value(1));
     }
 
     @Test
